@@ -5,22 +5,38 @@ namespace App\Http\Controllers;
 use App\Permission;
 use App\Role;
 use App\User;
+
 use Illuminate\Http\Request;
-
-use App\Http\Requests;
 use Illuminate\Support\Facades\Auth;
-use JWTAuth;
 use Tymon\JWTAuth\Exceptions\JWTException;
-use Log;
+use Tymon\JWTAuth\Facades\JWTAuth;
 
+/**
+ * Class JwtAuthenticateController
+ * @package App\Http\Controllers
+ */
 class JwtAuthenticateController extends Controller
 {
 
+	/**
+	 * Get all Users in the system
+	 *
+	 * @return \Illuminate\Http\JsonResponse
+	 */
 	public function index()
 	{
-		return response()->json(['auth' => Auth::user(), 'users' => User::all()]);
+		return response()->json([
+			'auth' => Auth::user(),
+			'users' => User::with('client')->get()
+		]);
 	}
 
+	/**
+	 * Authenticate a User
+	 *
+	 * @param Request $request
+	 * @return mixed
+	 */
 	public function authenticate(Request $request)
 	{
 		$credentials = $request->only('email', 'password');
@@ -28,17 +44,26 @@ class JwtAuthenticateController extends Controller
 		try {
 			// verify the credentials and create a token for the user
 			if (!$token = JWTAuth::attempt($credentials)) {
-				return response()->json(['error' => 'invalid_credentials'], 401);
+				return response()->error('Authentication Failed', 401);
 			}
 		} catch (JWTException $e) {
 			// something went wrong
-			return response()->json(['error' => 'could_not_create_token'], 500);
+			return response()->error('Oops, An Error Occurred', 500);
 		}
 
+		$user_id = Auth::User()->id;
+		$user = User::with('client')->findOrFail($user_id);
+
 		// if no errors are encountered we can return a JWT
-		return response()->json(compact('token'));
+		return response()->success(compact('token', 'user'));
 	}
 
+	/**
+	 * Create a role
+	 *
+	 * @param Request $request
+	 * @return \Illuminate\Http\JsonResponse
+	 */
 	public function createRole(Request $request)
 	{
 		// Todo
@@ -49,6 +74,12 @@ class JwtAuthenticateController extends Controller
 		return response()->json("created");
 	}
 
+	/**
+	 * Create a Permission
+	 *
+	 * @param Request $request
+	 * @return \Illuminate\Http\JsonResponse
+	 */
 	public function createPermission(Request $request)
 	{
 		// Todo
@@ -59,6 +90,12 @@ class JwtAuthenticateController extends Controller
 		return response()->json("created");
 	}
 
+	/**
+	 * Assign a Role to a User
+	 *
+	 * @param Request $request
+	 * @return \Illuminate\Http\JsonResponse
+	 */
 	public function assignRole(Request $request)
 	{
 		// Todo
@@ -71,6 +108,12 @@ class JwtAuthenticateController extends Controller
 		return response()->json("created");
 	}
 
+	/**
+	 * Attach a permission to a Role
+	 *
+	 * @param Request $request
+	 * @return \Illuminate\Http\JsonResponse
+	 */
 	public function attachPermission(Request $request)
 	{
 		// Todo
