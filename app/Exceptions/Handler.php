@@ -2,18 +2,27 @@
 
 namespace App\Exceptions;
 
+use App\Traits\RestExceptionHandlerTrait;
+use App\Traits\RestTrait;
 use Exception;
+use Illuminate\Database\Eloquent\ModelNotFoundException;
 use Illuminate\Foundation\Exceptions\Handler as ExceptionHandler;
+use Illuminate\Validation\ValidationException;
 
 class Handler extends ExceptionHandler
 {
+
+	use RestTrait;
+	use RestExceptionHandlerTrait;
+
 	/**
 	 * A list of the exception types that are not reported.
 	 *
 	 * @var array
 	 */
 	protected $dontReport = [
-		//
+		ValidationException::class,
+		ModelNotFoundException::class
 	];
 
 	/**
@@ -31,6 +40,7 @@ class Handler extends ExceptionHandler
 	 *
 	 * @param  \Exception $exception
 	 * @return void
+	 * @throws Exception
 	 */
 	public function report(Exception $exception)
 	{
@@ -46,6 +56,12 @@ class Handler extends ExceptionHandler
 	 */
 	public function render($request, Exception $exception)
 	{
-		return parent::render($request, $exception);
+		if (!$this->isApiCall($request)) {
+			$retval = parent::render($request, $exception);
+		} else {
+			$retval = $this->getJsonResponseForException($request, $exception);
+		}
+
+		return $retval;
 	}
 }
