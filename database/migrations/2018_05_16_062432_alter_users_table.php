@@ -15,8 +15,8 @@ class AlterUsersTable extends Migration
 	{
 		//
 		Schema::table('users', function (Blueprint $table) {
-			$table->bigInteger('client_id');
-			$table->bigInteger('staff_id');
+			$table->bigInteger('client_id')->nullable();
+			$table->bigInteger('staff_id')->nullable();
 		});
 	}
 

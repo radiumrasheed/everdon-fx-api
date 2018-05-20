@@ -28,6 +28,9 @@ Route::post('assign-role', 'JwtAuthenticateController@assignRole');
 Route::post('attach-permission', 'JwtAuthenticateController@attachPermission');
 // Authentication route
 Route::post('login', 'JwtAuthenticateController@authenticate');
+Route::post('auth/reset-password', 'PasswordController@sendResetPasswordEmail');
+// Authentication signup
+Route::post('signup/client', 'JwtAuthenticateController@createUser');
 
 
 // API route group that we need to protect
@@ -47,6 +50,7 @@ Route::group(['middleware' => ['role:systems-admin']], function () {
 
 	// Transaction Routes
 	Route::post('transactions', 'TransactionController@requestTransaction');
+	Route::post('transactions/express', 'TransactionController@requestExpressTransaction');
 	Route::put('transactions/{id}/treat', 'TransactionController@treatTransaction');
 	Route::put('transactions/{id}/approve', 'TransactionController@approveTransaction');
 	Route::put('transactions/{id}/fulfil', 'TransactionController@fulfilTransaction');
@@ -56,6 +60,8 @@ Route::group(['middleware' => ['role:systems-admin']], function () {
 	Route::resource('transactions', 'TransactionController')->only([
 		'index', 'update', 'destroy'
 	]);
-
+	Route::resource('accounts', 'AccountController')->only('index');
 
 });
+
+Route::resource('products', 'ProductController')->only('index');

@@ -2,15 +2,19 @@
 
 namespace App\Http\Controllers;
 
+use App\Account;
 use App\Client;
+use App\Product;
 use App\Transaction;
 use App\TransactionEvent;
+use App\TransactionMode;
 use App\TransactionStatus;
+use App\TransactionType;
 use Carbon\Carbon;
+use Illuminate\Database\Eloquent\ModelNotFoundException;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Auth;
 use Illuminate\Support\Facades\Validator;
-use Tymon\JWTAuth\JWTAuth;
 
 class TransactionController extends Controller
 {
@@ -29,7 +33,10 @@ class TransactionController extends Controller
 	 */
 	public function index()
 	{
-		$transactions = Auth::user()->client->transactions;
+		// catch
+		if (Auth::user()->client) {
+			$transactions = Auth::user()->client->transactions;
+		}
 
 		return response()->success(compact('transactions'));
 	}
@@ -54,13 +61,13 @@ class TransactionController extends Controller
 	{
 		// Validate the request...
 		$validator = Validator::make($request->all(), [
-			'client_id' => 'required|exists:clients,id',
+			'client_id' => 'exists:clients,id',
 			'transaction_type_id' => 'required|exists:transaction_type,id',
 			'transaction_mode_id' => 'required|exists:transaction_mode,id',
 			'product_id' => 'required|exists:products,id',
 			'account_id' => 'required|exists:accounts,id',
 			'amount' => 'required|numeric',
-			'rate' => 'required|numeric',
+			'rate' => 'numeric',
 			'wacc' => 'numeric',
 		]);
 
@@ -74,10 +81,124 @@ class TransactionController extends Controller
 		$transaction_status_id = TransactionStatus::where('name', 'open')->first()->id;
 
 		$transaction = new Transaction($inputs);
+
+		// Check if user is authenticated
+		if (Auth::user()->client) {
+			$transaction->client()->associate(Auth::user()->client);
+		}
+
 		$transaction->transaction_status_id = $transaction_status_id;
 		$transaction->save();
 
-		// trail Event
+		// trail Event...
+		$audit = new TransactionEvent();
+
+		$audit->transaction_id = $transaction->id;
+		$audit->transaction_status_id = $transaction->transaction_status_id;
+		$audit->action = 'Requested Transaction';
+		$audit->amount = $transaction->amount;
+		$audit->rate = $transaction->rate;
+		$audit->wacc = $transaction->wacc;
+
+		$audit->done_by = Auth::User()->id;
+		$audit->done_at = Carbon::now();
+		$audit->save();
+
+		$transaction = Transaction::with('client', 'account', 'events')->findOrFail($transaction->id);
+
+		return response()->success(compact('transaction'));
+	}
+
+	/**
+	 * Store a newly created resource in storage.
+	 *
+	 * @param  \Illuminate\Http\Request $r
+	 * @return \Illuminate\Http\Response
+	 */
+	public function requestExpressTransaction(Request $r)
+	{
+		// Validate the request...
+		$validator = Validator::make($r->all(), [
+			'full_name' => 'required',
+			'email' => 'required',
+			'phone' => 'required',
+			'amount' => 'required|numeric',
+			'i_have' => 'required',
+			'i_want' => 'required',
+			'account_number' => 'required',
+			'account_name' => 'required',
+			'bank_name' => 'required',
+			'bvn' => 'required',
+		]);
+
+		// Determine transaction type...
+		$have_foreign = in_array($r->i_have, ['USD', 'EUR', 'GBP']);
+		$want_foreign = in_array($r->i_want, ['USD', 'EUR', 'GBP']);
+		$have_local = in_array($r->i_have, ['NGN']);
+		$want_local = in_array($r->i_want, ['NGN']);
+		$same = $r->i_want == $r->i_have;
+		switch (true) {
+			case $have_foreign && $want_local:
+				$type = 'purchase';
+				break;
+			case $have_local && $want_foreign:
+				$type = 'sales';
+				break;
+			case $same:
+				$type = 'swap';
+				break;
+			case !$same && $have_foreign && $want_foreign:
+				$type = 'cross';
+				break;
+			default:
+				return response()->error('Unkwon Transaction Type');
+		}
+
+		// Determine transaction mode...
+		$mode = 'cash'; // todo - Review*
+
+
+		// todo validate account_id belongs to client_id...
+		if ($validator->fails()) {
+			return response()->error($validator->errors(), 422);
+		}
+
+		// Get Transaction type, mode and product...
+		try {
+			$transaction_status_id = TransactionStatus::where('name', 'open')->firstOrFail()->id;
+			$transaction_type_id = TransactionType::where('name', $type)->firstOrFail()->id;
+			$transaction_mode_id = TransactionMode::where('name', $mode)->firstOrFail()->id;
+			$product_id = Product::where('name', $r->i_want)->firstOrFail()->id;
+		} catch (ModelNotFoundException $e) {
+			return response()->error('An Error Occured!');
+		}
+
+		// Merge the above into the request...
+		$r->merge([
+			'transaction_type_id' => $transaction_type_id,
+			'transaction_mode_id' => $transaction_mode_id,
+			'client_type' => 3, // todo - Review*
+			'product_id' => $product_id
+		]);
+		$inputs = $r->only(['client_id', 'transaction_type_id', 'transaction_mode_id', 'product_id', 'account_id', 'amount']);
+
+		// Get or Create Client...
+		$client = Client::firstOrCreate($r->only('email'), $r->only(['email', 'full_name', 'phone', 'client_type']));
+
+		// Get or Create Account...
+		$account = Account::firstOrCreate(['number' => $r->account_number], ['client_id' => $client->id, 'number' => $r->account_number, 'name' => $r->account_name, 'bank' =>
+			$r->bank_name, 'bvn' => $r->bvn]);
+
+		// Save transaction
+		$transaction = new Transaction($inputs);
+		$transaction->client()->associate($client);
+		$transaction->account()->associate($account);
+		$transaction->transaction_status_id = $transaction_status_id;
+		$transaction->save();
+
+		return response()->success(compact('client', 'transaction', 'account'));
+
+		// trail Event...
 		$audit = new TransactionEvent();
 
 		$audit->transaction_id = $transaction->id;

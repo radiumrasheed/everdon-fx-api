@@ -10,6 +10,9 @@ class Account extends Model
 	protected $primaryKey = 'accounts';
 
 
+	protected $fillable = ['number', 'bvn', 'bank', 'name', 'client_id'];
+
+
 	public function client()
 	{
 		return $this->belongsTo('App\Clients', 'client_id');

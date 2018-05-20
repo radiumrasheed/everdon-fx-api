@@ -48,9 +48,9 @@ class ClientController extends Controller
 			'full_name', 'email', 'phone', 'bvn', 'office_address', 'marital_status', 'date_of_birth', 'residential_address', 'occupation',
 			'nok_full_name', 'nok_phone', 'referee'
 		]);
-		$_account = $request->only([
-			'account_name', 'account_number', 'bvn', 'bank_name'
-		]);
+		/*$_account = $request->only([
+			'account_name', 'account_number', 'bvn', 'bank_name', 'client_id'
+		]);*/
 		$client_type_id = ClientType::where('name', 'individual')->first()->id;
 
 
@@ -59,19 +59,19 @@ class ClientController extends Controller
 		$client->client_type = $client_type_id;
 		$client->save();
 
+		/*$_account = [
+			'name' => $request->account_name,
+			'number' => $request->account_number,
+			'bvn',
+			'bank' => $request->bank_name,
+			'client_id' => $client->id
+		];*/
+
 		// create account
-		$account = new Account();
-//		$account->client_id = $client->id;
-		$account->default = true;
-		$account->number = $request->account_number;
-		$account->name = $request->account_name;
-		$account->bank = $request->bank_name;
-		$account->bvn = $request->bvn;
-		$account->save();
+//		$account = Account::firstOrCreate(['number' => $request->account_number], $_account);
 
 		// attach account to client
-		$client->account()->associate($account);
-		$client->save();
+//		$client->accounts()->save($account);
 
 		return response()->success(compact('client'));
 	}

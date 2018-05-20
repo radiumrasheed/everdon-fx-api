@@ -25,8 +25,8 @@ class CreateTransactionsTable extends Migration
 			$table->bigInteger('account_id');
 
 			$table->float('amount');
-			$table->float('rate');
-			$table->float('wacc');
+			$table->float('rate')->nullable();
+			$table->float('wacc')->nullable();
 
 			$table->bigInteger('initiated_by')->nullable();
 			$table->bigInteger('reviewed_by')->nullable();

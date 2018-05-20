@@ -20,9 +20,9 @@ class CreateTransactionEventsTable extends Migration
 
 			$table->string('action');
 
-			$table->float('amount');
-			$table->float('rate');
-			$table->float('wacc');
+			$table->float('amount')->nullable();
+			$table->float('rate')->nullable();
+			$table->float('wacc')->nullable();
 
 			$table->bigInteger('done_by');
 			$table->dateTime('done_at');

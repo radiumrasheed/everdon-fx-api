@@ -14,7 +14,8 @@ class Client extends Model
 		'email',
 		'office_address',
 		'phone',
-		'bvn'
+		'bvn',
+		'client_type'
 	];
 
 	/**
