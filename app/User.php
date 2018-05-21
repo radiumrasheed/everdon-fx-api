@@ -37,4 +37,13 @@ class User extends Authenticatable
 		return $this->hasOne('App\Client');
 	}
 
+
+	/**
+	 * Get the type of client.
+	 */
+	public function staff()
+	{
+		return $this->hasOne('App\Staff');
+	}
+
 }

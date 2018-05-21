@@ -24,6 +24,7 @@ class ProductSeeder extends Seeder
 			['name' => 'USD', 'description' => 'US Dollar'],
 			['name' => 'EUR', 'description' => 'Euros'],
 			['name' => 'GBP', 'description' => 'British pounds'],
+			['name' => 'NGN', 'description' => 'Nigerian Naira'],
 		);
 
 		// Loop through each data above and create the record for them in the database

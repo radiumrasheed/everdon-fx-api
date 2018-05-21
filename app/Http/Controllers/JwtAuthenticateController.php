@@ -9,6 +9,7 @@ use App\Permission;
 use App\Role;
 use App\User;
 
+use Illuminate\Database\Eloquent\ModelNotFoundException;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Auth;
 use Illuminate\Support\Facades\Hash;
@@ -22,6 +23,8 @@ use Tymon\JWTAuth\Facades\JWTAuth;
  */
 class JwtAuthenticateController extends Controller
 {
+	const STAFFS = ['fx-ops', 'systems-admin', 'fx-ops-lead', 'fx-ops-manager', 'treasury-ops'];
+
 
 	/**
 	 * Get all Users in the system
@@ -35,6 +38,7 @@ class JwtAuthenticateController extends Controller
 			'users' => User::with('client')->get()
 		]);
 	}
+
 
 	/**
 	 * Authenticate a User
@@ -56,12 +60,70 @@ class JwtAuthenticateController extends Controller
 			return response()->error('Oops, An Error Occurred', 500);
 		}
 
-		$user_id = Auth::User()->id;
-		$user = User::with('client')->findOrFail($user_id);
+		// Check if User is a client
+		$is_client = Auth::user()->hasRole('client');
+
+		if (!$is_client) {
+			return response()->error('Invalid Username or Passowrd', 401);
+		}
+
+		try {
+			$user_id = Auth::User()->id;
+			$user = User::with('client')->findOrFail($user_id);
+		} catch (ModelNotFoundException $e) {
+			return response()->error('No Client Profile with the given credentials', 500);
+		}
+
+		// Add user role to a seperate token...
+		$_token = JWTAuth::attempt($credentials, ['roles' => 'client']);
 
 		// if no errors are encountered we can return a JWT
-		return response()->success(compact('token', 'user'));
+		return response()->success(compact('user', 'token', '_token'));
 	}
+
+
+	/**
+	 * Authenticate an Admin
+	 *
+	 * @param Request $request
+	 * @return mixed
+	 */
+	public function authenticateAdmin(Request $request)
+	{
+		$credentials = $request->only('email', 'password');
+
+		try {
+			// verify the credentials and create a token for the user
+			if (!$token = JWTAuth::attempt($credentials)) {
+				return response()->error('Authentication Failed', 401);
+			}
+		} catch (JWTException $e) {
+			// something went wrong
+			return response()->error('Oops, An Authentication Error Occurred', 500);
+		}
+
+		$user = Auth::user();
+		$is_staff = $user->hasRole(self::STAFFS);
+
+		if (!$is_staff) {
+			return response()->error('Authentication Failed', 401);
+		}
+
+		$user = User::with('staff')->findOrFail($user->id);
+
+		$roles = [];
+		foreach ($user->roles as $role) {
+			$roles[] = $role->name;
+		}
+		$roles = implode('|', $roles);
+
+		// Add user role to a seperate token...
+		$_token = JWTAuth::attempt($credentials, ['roles' => $roles]);
+
+		// if no errors are encountered we can return a JWT
+		return response()->success(compact('user', 'token', '_token'));
+	}
+
 
 	/**
 	 * Create a User
@@ -176,9 +238,9 @@ class JwtAuthenticateController extends Controller
 	public function assignRole(Request $request)
 	{
 		// Todo
-		$user = User::where('email', '=', $request->input('email'))->first();
+		$user = User::where('email', '=', $request->input('email'))->firstOrFail();
 
-		$role = Role::where('name', '=', $request->input('role'))->first();
+		$role = Role::where('name', '=', $request->input('role'))->firstOrFail();
 		//$user->attachRole($request->input('role'));
 		$user->roles()->attach($role->id);
 

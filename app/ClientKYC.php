@@ -11,6 +11,6 @@ class ClientKYC extends Model
 
 	public function client()
 	{
-		$this->belongsTo('App\Client', 'client_kyc_id');
+		$this->belongsTo('App\Client', 'client_id');
 	}
 }

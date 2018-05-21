@@ -1,6 +1,7 @@
 <?php
 
 use App\Role;
+use App\Staff;
 use App\User;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Seeder;
@@ -16,7 +17,6 @@ class UserSeeder extends Seeder
 	 */
 	public function run()
 	{
-		// $this->call(UsersTableSeeder::class);
 		Model::unguard();
 
 		// $this->call(UserTableSeeder::class);
@@ -30,10 +30,13 @@ class UserSeeder extends Seeder
 
 		// Loop through each user above and create the record for them in the database
 		foreach ($users as $user) {
+			$staff = Staff::create(['full_name' => $user['name'], 'email' => $user['email']]);
 			$_user = User::create($user);
+
+			$_user->staff()->save($staff);
 			$_user->roles()->attach($role->id);
 		}
 
-
+		Model::reguard();
 	}
 }

@@ -1,6 +1,5 @@
 <?php
 
-use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Route;
 
 /*
@@ -14,54 +13,57 @@ use Illuminate\Support\Facades\Route;
 |
 */
 
-Route::middleware('auth:api')->get('/user', function (Request $request) {
-	return $request->user();
+// Authentication route
+Route::post('auth/login', 'JwtAuthenticateController@authenticate');
+Route::post('auth/admin-login', 'JwtAuthenticateController@authenticateAdmin');
+Route::post('auth/reset-password', 'PasswordController@sendResetPasswordEmail');
+Route::post('auth/signup', 'JwtAuthenticateController@createUser');
+
+
+// Express Transaction...
+Route::post('transactions/express', 'TransactionController@requestExpressTransaction');
+
+
+// API route group that we need to protect for only system-admins...
+Route::group(['middleware' => ['role:systems-admin']], function () {
+
+	// Route to create a new role
+	Route::post('role', 'JwtAuthenticateController@createRole');
+	// Route to create a new permission
+	Route::post('permission', 'JwtAuthenticateController@createPermission');
+	// Route to assign role to user
+	Route::post('assign-role', 'JwtAuthenticateController@assignRole');
+	// Route to attache permission to a role
+	Route::post('attach-permission', 'JwtAuthenticateController@attachPermission');
+
+	// Protected route...
+	Route::get('users', 'JwtAuthenticateController@index');
 });
 
-// Route to create a new role
-Route::post('role', 'JwtAuthenticateController@createRole');
-// Route to create a new permission
-Route::post('permission', 'JwtAuthenticateController@createPermission');
-// Route to assign role to user
-Route::post('assign-role', 'JwtAuthenticateController@assignRole');
-// Route to attache permission to a role
-Route::post('attach-permission', 'JwtAuthenticateController@attachPermission');
-// Authentication route
-Route::post('login', 'JwtAuthenticateController@authenticate');
-Route::post('auth/reset-password', 'PasswordController@sendResetPasswordEmail');
-// Authentication signup
-Route::post('signup/client', 'JwtAuthenticateController@createUser');
 
+// API route group that we need to protect...
+Route::group(['middleware' => ['role:systems-admin|fx-ops|fx-ops-lead|fx-ops-manager|treasury-ops|client']], function () {
 
-// API route group that we need to protect
-Route::group(['middleware' => ['role:systems-admin']], function () {
-	// Protected route
-	Route::get('users', 'JwtAuthenticateController@index');
-
-
-	// Client Routes
+	// Client Routes...
 	Route::post('clients/individual', 'ClientController@storeIndividual');
 	Route::post('clients/cooperate', 'ClientController@storecooperate');
 	Route::get('clients/{id}', 'ClientController@show');
+	Route::resource('clients', 'ClientController')->only(['index']);
 
-	Route::resource('clients', 'ClientController')->only([
-		'index', 'update', 'destroy'
-	]);
-
-	// Transaction Routes
+	// Transaction Routes...
+	Route::get('transactions', 'TransactionController@index');
+	Route::get('transactions/{id}', 'TransactionController@show');
 	Route::post('transactions', 'TransactionController@requestTransaction');
-	Route::post('transactions/express', 'TransactionController@requestExpressTransaction');
 	Route::put('transactions/{id}/treat', 'TransactionController@treatTransaction');
 	Route::put('transactions/{id}/approve', 'TransactionController@approveTransaction');
 	Route::put('transactions/{id}/fulfil', 'TransactionController@fulfilTransaction');
 	Route::patch('transactions/{id}/cancel', 'TransactionController@cancelTransaction');
-	Route::get('transactions/{id}', 'TransactionController@show');
 
-	Route::resource('transactions', 'TransactionController')->only([
-		'index', 'update', 'destroy'
-	]);
+	// Account Routes...
 	Route::resource('accounts', 'AccountController')->only('index');
 
 });
 
+
+// Public Routes for Fillables...
 Route::resource('products', 'ProductController')->only('index');

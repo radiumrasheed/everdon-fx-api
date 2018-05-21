@@ -19,6 +19,7 @@ class CreateTransactionEventsTable extends Migration
 			$table->bigInteger('transaction_status_id');
 
 			$table->string('action');
+			$table->string('comment');
 
 			$table->float('amount')->nullable();
 			$table->float('rate')->nullable();

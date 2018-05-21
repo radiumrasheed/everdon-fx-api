@@ -19,7 +19,7 @@ class ClientController extends Controller
 	 */
 	public function index()
 	{
-		$clients = Client::all();
+		$clients = Client::with('client_kyc')->get();
 
 		return response()->success(compact('clients'));
 	}
@@ -114,7 +114,9 @@ class ClientController extends Controller
 	 */
 	public function show($client)
 	{
-		$client = Client::with('accounts')->findOrFail($client);
+		$client = Client::with('accounts', 'client_kyc')->findOrFail($client);
+
+//		$client = Client::find($client);
 
 		return response()->success(compact('client'));
 	}

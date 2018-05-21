@@ -21,12 +21,17 @@ class CreateTransactionsTable extends Migration
 			$table->bigInteger('transaction_status_id');
 
 			$table->bigInteger('client_id');
-			$table->bigInteger('product_id');
-			$table->bigInteger('account_id');
+			$table->bigInteger('selling_product_id');
+			$table->bigInteger('buying_product_id');
+			$table->bigInteger('account_id')->nullable();
+			$table->bigInteger('org_account_id')->nullable();
 
 			$table->float('amount');
 			$table->float('rate')->nullable();
 			$table->float('wacc')->nullable();
+			$table->float('calculated_amount')->nullable();
+
+			$table->string('country')->nullable();
 
 			$table->bigInteger('initiated_by')->nullable();
 			$table->bigInteger('reviewed_by')->nullable();

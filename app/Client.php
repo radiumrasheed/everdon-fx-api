@@ -47,6 +47,6 @@ class Client extends Model
 	 * */
 	public function client_kyc()
 	{
-		$this->hasOne('App\ClientKYC', 'client_id');
+		return $this->hasOne('App\ClientKYC', 'client_id');
 	}
 }

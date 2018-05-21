@@ -3,6 +3,7 @@
 namespace App\Http\Controllers;
 
 use App\Account;
+use App\Client;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Auth;
 
@@ -15,7 +16,11 @@ class AccountController extends Controller
 	 */
 	public function index()
 	{
-		$accounts = Auth::user()->client->accounts;
+		$auth = Auth::user();
+
+		if ($auth->hasRole(['client'])) {
+			$accounts = $auth->client->accounts;
+		}
 
 		return response()->success(compact('accounts'));
 	}

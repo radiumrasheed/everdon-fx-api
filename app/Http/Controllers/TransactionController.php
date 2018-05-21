@@ -10,6 +10,7 @@ use App\TransactionEvent;
 use App\TransactionMode;
 use App\TransactionStatus;
 use App\TransactionType;
+use App\User;
 use Carbon\Carbon;
 use Illuminate\Database\Eloquent\ModelNotFoundException;
 use Illuminate\Http\Request;
@@ -33,9 +34,42 @@ class TransactionController extends Controller
 	 */
 	public function index()
 	{
-		// catch
-		if (Auth::user()->client) {
-			$transactions = Auth::user()->client->transactions;
+		$auth = Auth::user();
+
+		$is_client = $auth->hasRole('client');
+		$is_systems_admin = $auth->hasRole('systems-admin');
+		$is_fx_ops = $auth->hasRole('fx-ops');
+		$is_fx_ops_lead = $auth->hasRole('fx-ops-lead');
+		$is_fx_ops_manager = $auth->hasRole('fx-ops-manager');
+		$is_treasury_ops = $auth->hasRole('treasury-ops');
+
+		switch (true) {
+			case $is_client:
+				$transactions = User::find($auth->id)->client->transactions;
+				break;
+
+			case $is_fx_ops:
+				$transactions = Transaction::where('transaction_status_id', 1)->get();
+				break;
+
+			case $is_fx_ops_lead:
+				$transactions = Transaction::where('transaction_status_id', 2)->get();
+				break;
+
+			case $is_fx_ops_manager:
+				$transactions = Transaction::where('transaction_status_id', 3)->get();
+				break;
+
+			case $is_treasury_ops:
+				$transactions = Transaction::where('transaction_status_id', 4)->get();
+				break;
+
+			case $is_systems_admin:
+				$transactions = Transaction::all();
+				break;
+
+			default:
+				$transactions = [];
 		}
 
 		return response()->success(compact('transactions'));
@@ -64,7 +98,8 @@ class TransactionController extends Controller
 			'client_id' => 'exists:clients,id',
 			'transaction_type_id' => 'required|exists:transaction_type,id',
 			'transaction_mode_id' => 'required|exists:transaction_mode,id',
-			'product_id' => 'required|exists:products,id',
+			'buying_product_id' => 'required|exists:products,id',
+			'selling_product_id' => 'required|exists:products,id',
 			'account_id' => 'required|exists:accounts,id',
 			'amount' => 'required|numeric',
 			'rate' => 'numeric',
@@ -77,7 +112,7 @@ class TransactionController extends Controller
 			return response()->error($validator->errors(), 422);
 		}
 
-		$inputs = $request->only(['client_id', 'transaction_type_id', 'transaction_mode_id', 'product_id', 'account_id', 'amount', 'rate', 'wacc']);
+		$inputs = $request->only(['client_id', 'transaction_type_id', 'transaction_mode_id', 'buying_product_id', 'selling_product_id', 'account_id', 'amount', 'rate', 'wacc']);
 		$transaction_status_id = TransactionStatus::where('name', 'open')->first()->id;
 
 		$transaction = new Transaction($inputs);
@@ -132,10 +167,10 @@ class TransactionController extends Controller
 		]);
 
 		// Determine transaction type...
-		$have_foreign = in_array($r->i_have, ['USD', 'EUR', 'GBP']);
-		$want_foreign = in_array($r->i_want, ['USD', 'EUR', 'GBP']);
-		$have_local = in_array($r->i_have, ['NGN']);
-		$want_local = in_array($r->i_want, ['NGN']);
+		$have_foreign = in_array($r->i_have, ['usd', 'eur', 'gbp']);
+		$want_foreign = in_array($r->i_want, ['usd', 'eur', 'gbp']);
+		$have_local = in_array($r->i_have, ['ngn']);
+		$want_local = in_array($r->i_want, ['ngn']);
 		$same = $r->i_want == $r->i_have;
 		switch (true) {
 			case $have_foreign && $want_local:
@@ -168,7 +203,8 @@ class TransactionController extends Controller
 			$transaction_status_id = TransactionStatus::where('name', 'open')->firstOrFail()->id;
 			$transaction_type_id = TransactionType::where('name', $type)->firstOrFail()->id;
 			$transaction_mode_id = TransactionMode::where('name', $mode)->firstOrFail()->id;
-			$product_id = Product::where('name', $r->i_want)->firstOrFail()->id;
+			$buying_product_id = Product::where('name', $r->i_want)->firstOrFail()->id;
+			$selling_product_id = Product::where('name', $r->i_have)->firstOrFail()->id;
 		} catch (ModelNotFoundException $e) {
 			return response()->error('An Error Occured!');
 		}
@@ -178,9 +214,10 @@ class TransactionController extends Controller
 			'transaction_type_id' => $transaction_type_id,
 			'transaction_mode_id' => $transaction_mode_id,
 			'client_type' => 3, // todo - Review*
-			'product_id' => $product_id
+			'buying_product_id' => $buying_product_id,
+			'selling_product_id' => $selling_product_id
 		]);
-		$inputs = $r->only(['client_id', 'transaction_type_id', 'transaction_mode_id', 'product_id', 'account_id', 'amount']);
+		$inputs = $r->only(['client_id', 'transaction_type_id', 'transaction_mode_id', 'buying_product_id', 'selling_product_id', 'account_id', 'amount']);
 
 		// Get or Create Client...
 		$client = Client::firstOrCreate($r->only('email'), $r->only(['email', 'full_name', 'phone', 'client_type']));
@@ -496,7 +533,7 @@ class TransactionController extends Controller
 
 		// todo - if transaction is OPEN, and Auth::User() is a staff, set it as IN_PROGRESS then track event as "Viewed Transaction"
 
-		$transaction = Transaction::with('client', 'account', 'events')->findOrFail($transaction);
+		$transaction = Transaction::with('client', 'account', 'events', 'events.done_by')->findOrFail($transaction);
 
 		return response()->success(compact('transaction'));
 	}
