@@ -26,8 +26,10 @@ class Controller extends BaseController
 
 		$this->middleware(function ($request, $next) {
 			try {
-				$this->is_client = Auth::user()->hasRole('client');
-				$this->is_staff = Auth::user()->hasRole(['systems-admin', 'fx-ops', 'fx-ops-manager', 'fx-ops-lead', 'treasury-ops']);
+				if (Auth::user() !== null) {
+					$this->is_client = Auth::user()->hasRole('client');
+					$this->is_staff = Auth::user()->hasRole(['systems-admin', 'fx-ops', 'fx-ops-manager', 'fx-ops-lead', 'treasury-ops']);
+				}
 			} catch (\Exception $e) {
 				Log::alert('Tried to authenticate');
 			}
