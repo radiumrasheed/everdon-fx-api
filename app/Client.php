@@ -15,7 +15,18 @@ class Client extends Model
 		'office_address',
 		'phone',
 		'bvn',
-		'client_type'
+		'client_type',
+		'marital_status',
+		'residential_address',
+		'occupation',
+		'nok_full_name',
+		'nok_phone',
+		'referee_1',
+		'referee_2',
+		'referee_3',
+		'referee_4',
+		'date_of_birth',
+		'rc_number'
 	];
 
 	/**

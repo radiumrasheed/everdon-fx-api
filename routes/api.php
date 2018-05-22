@@ -48,7 +48,8 @@ Route::group(['middleware' => ['role:systems-admin|fx-ops|fx-ops-lead|fx-ops-man
 	Route::post('clients/individual', 'ClientController@storeIndividual');
 	Route::post('clients/cooperate', 'ClientController@storecooperate');
 	Route::get('clients/{id}', 'ClientController@show');
-	Route::resource('clients', 'ClientController')->only(['index']);
+	Route::get('clients', 'ClientController@index');
+	Route::put('clients/{id}', 'ClientController@update');
 
 	// Transaction Routes...
 	Route::get('transactions', 'TransactionController@index');

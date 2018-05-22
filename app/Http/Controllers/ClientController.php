@@ -2,16 +2,16 @@
 
 namespace App\Http\Controllers;
 
-use App\Account;
-use App\User;
 use App\Client;
 use App\ClientType;
+use Illuminate\Database\Eloquent\ModelNotFoundException;
 use Illuminate\Http\Request;
-use Illuminate\Support\Facades\Response;
+use Illuminate\Support\Facades\Auth;
 use Illuminate\Support\Facades\Validator;
 
 class ClientController extends Controller
 {
+
 	/**
 	 * Display a listing of the resource.
 	 *
@@ -19,9 +19,13 @@ class ClientController extends Controller
 	 */
 	public function index()
 	{
-		$clients = Client::with('client_kyc')->get();
+		if ($this->is_client) {
+			$client = Client::with('accounts', 'client_kyc')->findOrFail(Auth::user()->client->id);
+		} elseif ($this->is_staff) {
+			$clients = Client::with('client_kyc', 'accounts')->get();
+		}
 
-		return response()->success(compact('clients'));
+		return response()->success(compact('clients', 'client'));
 	}
 
 
@@ -126,31 +130,54 @@ class ClientController extends Controller
 	 * Update the specified resource in storage.
 	 *
 	 * @param  \Illuminate\Http\Request $request
-	 * @param  \App\Client $client
+	 * @param  \App\Client $client_
 	 * @return \Illuminate\Http\Response
 	 */
-	public function update(Request $request, Client $client)
+	public function update(Request $request, $client_)
 	{
 		// Validate the request...
 		$validator = Validator::make($request->all(), [
-			'email' => 'required|unique:clients|email',
+			'email' => 'required|exists:clients|email',
 			'full_name' => 'required',
 			'phone' => 'required',
-			'rc_number' => 'required',
 		]);
 
 		if ($validator->fails()) {
 			return response()->error($validator->errors(), 422);
 		}
 
-		$inputs = $request->only(['full_name', 'email', 'phone', 'bvn', 'office_address', 'rc_number']);
-		$client_type_id = ClientType::where('name', 'cooperate')->first()->id;
+		try {
+			$client = Client::where('id', $client_)->firstOrFail();
+		} catch (ModelNotFoundException $e) {
+			return response()->error('Client Profile does not exist');
+		}
 
-		$client = new Client($inputs);
-		$client->client_type = $client_type_id;
-		$client->save();
+		// Get inputs based on client type...
+		if ($client->client_type === 1) {
+			$inputs = $request->only(['full_name', 'email', 'phone', 'bvn', 'office_address', 'marital_status',
+				'residential_address',
+				'occupation',
+				'nok_full_name',
+				'nok_phone',
+				'referee_1',
+				'referee_2',
+				'referee_3',
+				'referee_4',
+				'date_of_birth',
+			]);
+		} else {
+			$inputs = $request->only(['full_name', 'email', 'phone', 'bvn', 'office_address', 'rc_number']);
+		}
 
-		return response()->success(compact('client'));
+		// Update Profile...
+		try {
+			$client->update($inputs);
+			$client->save();
+		} catch (\Exception $e) {
+			return response()->error('Profile Update failed: ' . $e->getMessage());
+		}
+
+		return response()->success(compact('client', 'client_', 'inputs'));
 	}
 
 
