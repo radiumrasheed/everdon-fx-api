@@ -136,7 +136,7 @@ class JwtAuthenticateController extends Controller
 		// Validate the request...
 		$validator = Validator::make($request->all(), [
 			'full_name' => 'required',
-			'email' => 'required|unique:clients|email',
+			'email' => 'required|unique:users|email',
 			'phone' => 'required',
 			'password' => 'required',
 			'cooperate' => 'boolean',
@@ -173,7 +173,7 @@ class JwtAuthenticateController extends Controller
 
 		try {
 			// create client
-			$client = new Client($_client);
+			$client = Client::firstOrCreate(['email' => $request->email], $_client);
 			// $client->accounts()->save($account);
 			// $client->save();
 
@@ -181,10 +181,10 @@ class JwtAuthenticateController extends Controller
 			$user->client()->save($client);
 			$user->roles()->attach($_role->id);
 		} catch (\Exception $e) {
-			if ($user) {
-				$user->client()->delete();
-				$user->delete();
-			}
+//			if ($user) {
+//				$user->client()->delete();
+//				$user->delete();
+//			}
 
 			return response()->error($e->getMessage());
 		}

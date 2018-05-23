@@ -14,7 +14,7 @@ class TransactionEvent extends Model
 		return $this->belongsTo('App\Transactions', 'transaction_id');
 	}
 
-	public function done_by()
+	public function doneBy()
 	{
 		return $this->belongsTo('App\User', 'done_by');
 	}

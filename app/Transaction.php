@@ -17,6 +17,9 @@ class Transaction extends Model
 		'buying_product_id',
 		'selling_product_id',
 		'amount',
+		'condition',
+		'org_account_id',
+		'calculated_amount',
 		'rate',
 		'wacc'
 	];
@@ -43,5 +46,20 @@ class Transaction extends Model
 	public function events()
 	{
 		return $this->hasMany('App\TransactionEvent', 'transaction_id');
+	}
+
+	public function closedBy()
+	{
+		return $this->hasOne('App\User', 'closed_by');
+	}
+
+	public function approvedBy()
+	{
+		return $this->hasOne('App\User', 'approved_by');
+	}
+
+	public function reviewedBy()
+	{
+		return $this->hasOne('App\User', 'reviewed_by');
 	}
 }

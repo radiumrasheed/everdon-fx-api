@@ -26,6 +26,7 @@ class TransactionTypeSeeder extends Seeder
 			['name' => 'swap', 'description' => 'Swap'],
 			['name' => 'refund', 'description' => 'Refund'],
 			['name' => 'expenses', 'description' => 'Expenses'],
+			['name' => 'cross', 'description' => 'Cross'],
 		);
 
 		// Loop through each data above and create the record for them in the database

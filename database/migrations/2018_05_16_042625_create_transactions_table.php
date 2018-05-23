@@ -26,12 +26,13 @@ class CreateTransactionsTable extends Migration
 			$table->bigInteger('account_id')->nullable();
 			$table->bigInteger('org_account_id')->nullable();
 
-			$table->float('amount');
-			$table->float('rate')->nullable();
-			$table->float('wacc')->nullable();
-			$table->float('calculated_amount')->nullable();
+			$table->decimal('amount', 13, 4);
+			$table->decimal('rate', 13, 4)->nullable();
+			$table->decimal('wacc', 13, 4)->nullable();
+			$table->decimal('calculated_amount', 13, 4)->nullable();
 
 			$table->string('country')->nullable();
+			$table->string('condition')->nullable();
 
 			$table->bigInteger('initiated_by')->nullable();
 			$table->bigInteger('reviewed_by')->nullable();
