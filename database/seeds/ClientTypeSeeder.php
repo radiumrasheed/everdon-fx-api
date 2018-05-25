@@ -23,6 +23,7 @@ class ClientTypeSeeder extends Seeder
 		$datas = array(
 			['name' => 'individual', 'description' => 'Individual'],
 			['name' => 'cooperate', 'description' => 'Cooperate'],
+			['name' => 'express', 'description' => 'Express Client'],
 		);
 
 		// Loop through each data above and create the record for them in the database

@@ -6,9 +6,18 @@ use Illuminate\Database\Eloquent\Model;
 
 class Client extends Model
 {
-	//
+	/**
+	 * The table associated with the model.
+	 *
+	 * @var string
+	 */
 	protected $table = 'clients';
 
+	/**
+	 * The attributes that are mass assignable.
+	 *
+	 * @var array
+	 */
 	protected $fillable = [
 		'full_name',
 		'email',
@@ -59,5 +68,17 @@ class Client extends Model
 	public function client_kyc()
 	{
 		return $this->hasOne('App\ClientKYC', 'client_id');
+	}
+
+	/**
+	 * Scope a search query
+	 *
+	 * @param \Illuminate\Database\Eloquent\Builder $query
+	 * @param $term
+	 * @return \Illuminate\Database\Eloquent\Builder
+	 */
+	public function scopeSearch($query, $term)
+	{
+		return $query->where('full_name', 'like', '%' . $term . '%')->orWhere('email', 'like', '%' . $term . '%')->select(['id', 'full_name', 'email']);
 	}
 }

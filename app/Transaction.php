@@ -48,18 +48,35 @@ class Transaction extends Model
 		return $this->hasMany('App\TransactionEvent', 'transaction_id');
 	}
 
+	/**
+	 * Get the User that closed the transaction
+	 */
 	public function closedBy()
 	{
 		return $this->hasOne('App\User', 'closed_by');
 	}
 
+	/**
+	 * Get the User that approved the transaction
+	 */
 	public function approvedBy()
 	{
 		return $this->hasOne('App\User', 'approved_by');
 	}
 
+	/**
+	 * Get the User that reviewed the transaction
+	 */
 	public function reviewedBy()
 	{
 		return $this->hasOne('App\User', 'reviewed_by');
+	}
+
+	/**
+	 * Get the User that initiated the transaction
+	 */
+	public function initiatedBy()
+	{
+		return $this->hasOne('App\User', 'initiated_by');
 	}
 }

@@ -13,6 +13,25 @@ class ClientController extends Controller
 {
 
 	/**
+	 * Get a clients' accounts
+	 *
+	 * @param Request $request
+	 * @param $client_id
+	 * @return mixed
+	 */
+	public function accounts(Request $request, $client_id)
+	{
+		if (!$this->is_staff) {
+			return response()->error('You don\'t have the rights to make this request');
+		}
+
+		$accounts = Client::with('accounts')->find($client_id)->accounts;
+
+		return response()->success(compact('accounts'));
+	}
+
+
+	/**
 	 * Display a listing of the resource.
 	 *
 	 * @return \Illuminate\Http\Response
@@ -123,6 +142,25 @@ class ClientController extends Controller
 //		$client = Client::find($client);
 
 		return response()->success(compact('client'));
+	}
+
+
+	/**
+	 * Search for a client
+	 *
+	 * @param Request $request
+	 * @param $term
+	 * @return mixed
+	 */
+	public function search(Request $request, $term)
+	{
+		if (!$this->is_staff) {
+			return response()->error('Unauthorised Access', 401);
+		}
+
+		$clients = Client::search($term)->get();
+
+		return response()->success(compact('clients'));
 	}
 
 

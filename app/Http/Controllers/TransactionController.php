@@ -15,6 +15,7 @@ use Carbon\Carbon;
 use Illuminate\Database\Eloquent\ModelNotFoundException;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Auth;
+use Illuminate\Support\Facades\Log;
 use Illuminate\Support\Facades\Validator;
 
 class TransactionController extends Controller
@@ -26,12 +27,12 @@ class TransactionController extends Controller
 	const CANCELLED = 'cancelled';
 	const CLOSED = 'closed';
 	const RAISED = 'raised';
+	protected $is_systems_admin;
+	protected $is_fx_ops;
+	protected $is_fx_ops_lead;
+	protected $is_fx_ops_manager;
+	protected $is_treasury_ops;
 
-	/** Requesting user is a client */
-	protected $can_treat = false;
-
-	/** Requesting user is a staff */
-	protected $can_approve = false;
 
 	/**
 	 * Controller constructor.
@@ -41,18 +42,29 @@ class TransactionController extends Controller
 
 		parent::__construct();
 
-		$this->middleware(function ($request, $next) {
-			try {
-				if (Auth::user() !== null) {
-					$this->can_approve = Auth::user()->can('can-approve');
-					$this->can_treat = Auth::user()->can('can-treat');
-				}
-			} catch (\Exception $e) {
-				Log::alert('Tried to validate roles');
-			}
+		$this->middleware(/**
+		 * @param $request
+		 * @param $next
+		 * @return mixed
+		 */
+			function ($request, $next) {
+				try {
+					if (Auth::user() !== null) {
+						$auth = Auth::user();
 
-			return $next($request);
-		});
+						$this->is_client = $auth->hasRole('client');
+						$this->is_systems_admin = $auth->hasRole('systems-admin');
+						$this->is_fx_ops = $auth->hasRole('fx-ops');
+						$this->is_fx_ops_lead = $auth->hasRole('fx-ops-lead');
+						$this->is_fx_ops_manager = $auth->hasRole('fx-ops-manager');
+						$this->is_treasury_ops = $auth->hasRole('treasury-ops');
+					}
+				} catch (\Exception $e) {
+					Log::alert('Tried to validate roles');
+				}
+
+				return $next($request);
+			});
 	}
 
 	/**
@@ -62,43 +74,39 @@ class TransactionController extends Controller
 	 */
 	public function index()
 	{
-		$auth = Auth::user();
 
-		$is_client = $auth->hasRole('client');
-		$is_systems_admin = $auth->hasRole('systems-admin');
-		$is_fx_ops = $auth->hasRole('fx-ops');
-		$is_fx_ops_lead = $auth->hasRole('fx-ops-lead');
-		$is_fx_ops_manager = $auth->hasRole('fx-ops-manager');
-		$is_treasury_ops = $auth->hasRole('treasury-ops');
 
 		switch (true) {
-			case $is_client:
-				$transactions = User::find($auth->id)->client->transactions;
+			case $this->is_client:
+				$transactions = User::find(Auth::user()->id)->client->transactions;
 				break;
 
-			case $is_fx_ops:
+			case $this->is_fx_ops:
 				$transactions = Transaction::where('transaction_status_id', 1)->get();
 				break;
 
-			case $is_fx_ops_lead:
+			case $this->is_fx_ops_lead:
 				$transactions = Transaction::where('transaction_status_id', 2)->get();
 				break;
 
-			case $is_fx_ops_manager:
+			case $this->is_fx_ops_manager:
 				$transactions = Transaction::where('transaction_status_id', 3)->get();
 				break;
 
-			case $is_treasury_ops:
+			case $this->is_treasury_ops:
 				$transactions = Transaction::where('transaction_status_id', 4)->get();
 				break;
 
-			case $is_systems_admin:
+			case $this->is_systems_admin:
 				$transactions = Transaction::all();
 				break;
 
 			default:
 				$transactions = [];
 		}
+
+		// Load missing client data along with transaction
+		$transactions->loadMissing('client:id,full_name,occupation');
 
 		return response()->success(compact('transactions'));
 	}
@@ -116,56 +124,130 @@ class TransactionController extends Controller
 	/**
 	 * Store a newly created resource in storage.
 	 *
-	 * @param  \Illuminate\Http\Request $request
+	 * @param  \Illuminate\Http\Request $r
 	 * @return \Illuminate\Http\Response
 	 */
-	public function requestTransaction(Request $request)
+	public function requestTransaction(Request $r)
 	{
+
 		// Validate the request...
-		$validator = Validator::make($request->all(), [
+		$validator = Validator::make($r->all(), [
 			'client_id' => 'exists:clients,id',
-			'transaction_type_id' => 'required|exists:transaction_type,id',
-			'transaction_mode_id' => 'required|exists:transaction_mode,id',
+			'transaction_type_id' => 'exists:transaction_type,id',
+			'transaction_mode_id' => 'exists:transaction_mode,id',
 			'buying_product_id' => 'required|exists:products,id',
 			'selling_product_id' => 'required|exists:products,id',
-			'account_id' => 'required|exists:accounts,id',
 			'amount' => 'required|numeric',
+			'account_id' => 'exists:accounts,id',
 			'rate' => 'numeric',
 			'wacc' => 'numeric',
+			'account_number' => 'string',
+			'account_name' => 'string',
+			'bank_name' => 'string',
+			'bvn' => 'string',
 		]);
 
-		// todo validate account_id belongs to client_id
+		if ($this->is_client) {
+			// Determine transaction type...
+			$have_foreign = in_array($r->selling_product_id, ['1', '2', '3']);
+			$want_foreign = in_array($r->buying_product_id, ['1', '2', '2']);
+			$have_local = in_array($r->selling_product_id, ['4']);
+			$want_local = in_array($r->buying_product_id, ['4']);
+			$same = $r->buying_product_id == $r->selling_product_id;
+			switch (true) {
+				case $have_foreign && $want_local:
+					$type = 'purchase';
+					break;
+				case $have_local && $want_foreign:
+					$type = 'sales';
+					break;
+				case $same:
+					$type = 'swap';
+					break;
+				case !$same && $have_foreign && $want_foreign:
+					$type = 'cross';
+					break;
+				default:
+					return response()->error('Unkwon Transaction Type');
+			}
+			// Determine transaction mode...
+			$mode = 'cash'; // todo - Review*
+			$transaction_type_id = TransactionType::where('name', $type)->firstOrFail()->id;
+			$transaction_mode_id = TransactionMode::where('name', $mode)->firstOrFail()->id;
+			$r->merge(['transaction_type_id' => $transaction_type_id, 'transaction_mode_id' => $transaction_mode_id]);
+		}
 
 		if ($validator->fails()) {
 			return response()->error($validator->errors(), 422);
 		}
 
-		$inputs = $request->only(['client_id', 'transaction_type_id', 'transaction_mode_id', 'buying_product_id', 'selling_product_id', 'account_id', 'amount', 'rate', 'wacc']);
+		$inputs = $r->only(['client_id', 'transaction_type_id', 'transaction_mode_id', 'buying_product_id', 'selling_product_id', 'account_id', 'amount', 'rate', 'wacc']);
 		$transaction_status_id = TransactionStatus::where('name', 'open')->first()->id;
+
+
+		try {
+			// Get Client...
+			if ($this->is_client) {
+				$client = Auth::user()->client;
+			} elseif ($this->is_staff) {
+				$client = Client::find($r->client_id);
+			} else {
+				return response()->error('How did you get here!');
+			}
+
+			// Get or Create Account...
+			if ($r->account_id) {
+				$account = Account::find($r->account_id);
+			} else {
+				/*$owner_exists = Account::where('number', $r->account_number)->where('client_id', $client->id)->count();
+				if ($owner_exists == 0) {
+					return response()->success(compact('owner_exists'));
+				}*/
+
+				$account = Account::firstOrCreate(['number' => $r->account_number], ['number' => $r->account_number, 'name' => $r->account_name, 'bank' =>
+					$r->bank_name, 'bvn' => $r->bvn, 'client_id' => $client->id]);
+
+				// make sure account doesn't belong to a different client...
+				if ($account->client_id !== $client->id) {
+					return response()->error('account details provided belongs to a different customer');
+				}
+
+				// HACK >>>> get account again so it comes with id...
+//				$account = Account::where('number', $r->account_number)->firstOrFail();
+			}
+		} catch (ModelNotFoundException $e) {
+			return response()->error('No such client or account exists');
+		}
+
 
 		$transaction = new Transaction($inputs);
 
-		// Check if user is authenticated
-		if (Auth::user()->client) {
-			$transaction->client()->associate(Auth::user()->client);
+		// Check if user is a staff
+		if ($this->is_staff) {
+			$transaction->initiated_by = Auth::user()->id;
+			$transaction->initiated_at = Carbon::now();
 		}
 
 		$transaction->transaction_status_id = $transaction_status_id;
+		$transaction->client()->associate($client);
+		$transaction->account()->associate($account);
 		$transaction->save();
 
-		// trail Event...
-		$audit = new TransactionEvent();
+		if ($this->is_staff) {
+			// trail Event...
+			$audit = new TransactionEvent();
 
-		$audit->transaction_id = $transaction->id;
-		$audit->transaction_status_id = $transaction->transaction_status_id;
-		$audit->action = 'Requested Transaction';
-		$audit->amount = $transaction->amount;
-		$audit->rate = $transaction->rate;
-		$audit->wacc = $transaction->wacc;
+			$audit->transaction_id = $transaction->id;
+			$audit->transaction_status_id = $transaction->transaction_status_id;
+			$audit->action = 'Requested Transaction';
+			$audit->amount = $transaction->amount;
+			$audit->rate = $transaction->rate;
+			$audit->wacc = $transaction->wacc;
 
-		$audit->done_by = Auth::User()->id;
-		$audit->done_at = Carbon::now();
-		$audit->save();
+			$audit->done_by = Auth::User()->id;
+			$audit->done_at = Carbon::now();
+			$audit->save();
+		}
 
 		$transaction = Transaction::with('client', 'account', 'events')->findOrFail($transaction->id);
 
@@ -276,6 +358,11 @@ class TransactionController extends Controller
 	 */
 	public function treatTransaction(Request $request, $transaction_id)
 	{
+		// check role...
+		if (!$this->is_fx_ops) {
+			return response()->error('You don\'t have the rights to perform the requested action!');
+		}
+
 		// Get the transaction...
 		$transaction = Transaction::with('client')->findOrFail($transaction_id);
 
@@ -554,9 +641,19 @@ class TransactionController extends Controller
 				})->get());
 		}*/
 
-		// todo - if transaction is OPEN, and Auth::User() is a staff, set it as IN_PROGRESS then track event as "Viewed Transaction"
+		try {
+			$transaction = Transaction::with('client', 'account', 'events', 'events.doneBy')->findOrFail($transaction);
+		} catch (ModelNotFoundException $e) {
+			return response()->error('No such Transaction exists');
+		}
 
-		$transaction = Transaction::with('client', 'account', 'events', 'events.doneBy')->findOrFail($transaction);
+		if ($this->is_client) {
+			if ($transaction['client_id'] !== Auth::user()->client->id) {
+				return response()->error('You don\'t have the rights to access that transaction');
+			}
+		} else {
+			//
+		}
 
 		return response()->success(compact('transaction'));
 	}
