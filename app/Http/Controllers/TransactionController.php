@@ -82,7 +82,7 @@ class TransactionController extends Controller
 				break;
 
 			case $this->is_fx_ops:
-				$transactions = Transaction::where('transaction_status_id', 1)->get();
+				$transactions = Transaction::where('transaction_status_id', 1)->orWhere('transaction_status_id', 2)->get();
 				break;
 
 			case $this->is_fx_ops_lead:
@@ -364,7 +364,11 @@ class TransactionController extends Controller
 		}
 
 		// Get the transaction...
-		$transaction = Transaction::with('client')->findOrFail($transaction_id);
+		try {
+			$transaction = Transaction::with('client')->findOrFail($transaction_id);
+		} catch (ModelNotFoundException $e) {
+			return response()->error('Transaction does not exist');
+		}
 
 		$transaction_status_open = TransactionStatus::where('name', $this::OPEN)->first()->id;
 		$transaction_status_in_progress = TransactionStatus::where('name', $this::IN_PROGRESS)->first()->id;
@@ -434,7 +438,11 @@ class TransactionController extends Controller
 	public function approveTransaction(Request $request, $transaction_id)
 	{
 		// Get the transaction...
-		$transaction = Transaction::with('client')->findOrFail($transaction_id);
+		try {
+			$transaction = Transaction::with('client')->findOrFail($transaction_id);
+		} catch (ModelNotFoundException $e) {
+			return response()->error('Transaction does not exist');
+		}
 
 		$transaction_status_pending = TransactionStatus::where('name', $this::PENDING_APPROVAL)->first()->id;
 
@@ -498,7 +506,11 @@ class TransactionController extends Controller
 	public function fulfilTransaction(Request $request, $transaction_id)
 	{
 		// Get the transaction...
-		$transaction = Transaction::with('client')->findOrFail($transaction_id);
+		try {
+			$transaction = Transaction::with('client')->findOrFail($transaction_id);
+		} catch (ModelNotFoundException $e) {
+			return response()->error('Transaction does not exist');
+		}
 
 		$transaction_status_pending_fulfilment = TransactionStatus::where('name', $this::PENDING_FULFILMENT)->first()->id;
 
@@ -559,7 +571,11 @@ class TransactionController extends Controller
 	public function cancelTransaction(Request $request, $transaction_id)
 	{
 		// Get the transaction...
-		$transaction = Transaction::with('client')->findOrFail($transaction_id);
+		try {
+			$transaction = Transaction::with('client')->findOrFail($transaction_id);
+		} catch (ModelNotFoundException $e) {
+			return response()->error('Transaction does not exist');
+		}
 
 		$transaction_status_closed = TransactionStatus::where('name', $this::CLOSED)->first()->id;
 		$transaction_status_cancelled = TransactionStatus::where('name', $this::CANCELLED)->first()->id;
@@ -580,14 +596,12 @@ class TransactionController extends Controller
 			return response()->error($validator->errors(), 422);
 		}
 
-		$inputs = $request->only(['string']);
 		$transaction_status_id = TransactionStatus::where('name', $this::CANCELLED)->first()->id;
 
 		// Update transaction for FULFILMENT...
 		$transaction->transaction_status_id = $transaction_status_id;
 		$transaction->cancelled_by = Auth::user()->id;
 		$transaction->cancelled_at = Carbon::now();
-		$transaction->fill($inputs);
 		$transaction->update();
 
 		// trail Event
@@ -596,6 +610,67 @@ class TransactionController extends Controller
 		$audit->transaction_id = $transaction->id;
 		$audit->transaction_status_id = $transaction->transaction_status_id;
 		$audit->action = 'Cancelled Transaction';
+		$audit->comment = $request->comment;
+		// todo add account_id
+		$audit->calculated_amount = $transaction->calculated_amount;
+		$audit->condition = $transaction->condition;
+		$audit->org_account_id = $transaction->org_account_id;
+		$audit->rate = $transaction->rate;
+		$audit->wacc = $transaction->wacc;
+
+		$audit->done_by = Auth::user()->id;
+		$audit->done_at = Carbon::now();
+		$audit->save();
+
+		$transaction = Transaction::with('client', 'account', 'events')->findOrFail($transaction->id);
+
+		return response()->success(compact('transaction'));
+	}
+
+	/**
+	 * Reject any transaction
+	 *
+	 * @param  \Illuminate\Http\Request $request
+	 * @param $transaction_id
+	 * @return \Illuminate\Http\Response
+	 */
+	public function rejectTransaction(Request $request, $transaction_id)
+	{
+		// Get the transaction...
+		try {
+			$transaction = Transaction::with('client')->findOrFail($transaction_id);
+		} catch (ModelNotFoundException $e) {
+			return response()->error('Transaction does not exist');
+		}
+
+		$transaction_status_rejected = TransactionStatus::where('name', $this::IN_PROGRESS)->first()->id;
+
+		// @throw error if transaction is already REJECTED
+		if (in_array($transaction->transaction_status_id, [$transaction_status_rejected])) {
+			return response()->error('Transaction is already REJECTED');
+		}
+
+		// Validate the request...
+		$validator = Validator::make($request->all(), [
+			'comment' => 'required|string'
+		]);
+
+		// todo validate account_id belongs to client_id
+
+		if ($validator->fails()) {
+			return response()->error($validator->errors(), 422);
+		}
+
+		// Update transaction for REVIEW...
+		$transaction->transaction_status_id = $transaction_status_rejected;
+		$transaction->update();
+
+		// trail Event
+		$audit = new TransactionEvent();
+
+		$audit->transaction_id = $transaction->id;
+		$audit->transaction_status_id = $transaction->transaction_status_id;
+		$audit->action = 'Rejected Transaction';
 		$audit->comment = $request->comment;
 		// todo add account_id
 		$audit->calculated_amount = $transaction->calculated_amount;

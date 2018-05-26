@@ -61,9 +61,15 @@ Route::group(['middleware' => ['role:systems-admin|fx-ops|fx-ops-lead|fx-ops-man
 	Route::put('transactions/{id}/approve', 'TransactionController@approveTransaction');
 	Route::put('transactions/{id}/fulfil', 'TransactionController@fulfilTransaction');
 	Route::patch('transactions/{id}/cancel', 'TransactionController@cancelTransaction');
+	Route::patch('transactions/{id}/reject', 'TransactionController@rejectTransaction');
 
 	// Account Routes...
 	Route::resource('accounts', 'AccountController')->only('index');
+
+
+	// Dashboard Routes...
+	Route::get('dashboard/figures', 'DashboardController@figures');
+	Route::get('dashboard/recent_transactions', 'DashboardController@recentTransactions');
 
 });
 
