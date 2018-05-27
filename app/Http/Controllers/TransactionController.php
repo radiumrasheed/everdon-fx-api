@@ -4,6 +4,9 @@ namespace App\Http\Controllers;
 
 use App\Account;
 use App\Client;
+use App\Notifications\NotifyClient;
+use App\Notifications\NotifyStaff;
+use App\Notifications\TransactionReviewed;
 use App\Product;
 use App\Transaction;
 use App\TransactionEvent;
@@ -14,6 +17,7 @@ use App\User;
 use Carbon\Carbon;
 use Illuminate\Database\Eloquent\ModelNotFoundException;
 use Illuminate\Http\Request;
+use Illuminate\Support\Facades\Notification;
 use Illuminate\Support\Facades\Auth;
 use Illuminate\Support\Facades\Log;
 use Illuminate\Support\Facades\Validator;
@@ -419,11 +423,15 @@ class TransactionController extends Controller
 		$audit->rate = $transaction->rate;
 		$audit->wacc = $transaction->wacc;
 
-		$audit->done_by = Auth::User()->id;
+		$audit->done_by = Auth::user()->id;
 		$audit->done_at = Carbon::now();
 		$audit->save();
 
 		$transaction = Transaction::with('client', 'account', 'events')->findOrFail($transaction->id);
+
+		// Notify both client and staff...
+		Notification::route('mail', Auth::user()->email)->notify(new NotifyStaff($transaction, Auth::user()->staff));
+		Notification::route('mail', $transaction->client->email)->notify(new NotifyClient($transaction));
 
 		return response()->success(compact('transaction'));
 	}
@@ -493,6 +501,10 @@ class TransactionController extends Controller
 
 		$transaction = Transaction::with('client', 'account', 'events')->findOrFail($transaction->id);
 
+		// Notify both client and staff...
+		Notification::route('mail', Auth::user()->email)->notify(new NotifyStaff($transaction, Auth::user()->staff));
+		Notification::route('mail', $transaction->client->email)->notify(new NotifyClient($transaction));
+
 		return response()->success(compact('transaction'));
 	}
 
@@ -557,6 +569,10 @@ class TransactionController extends Controller
 		$audit->save();
 
 		$transaction = Transaction::with('client', 'account', 'events')->findOrFail($transaction->id);
+
+		// Notify both client and staff...
+		Notification::route('mail', Auth::user()->email)->notify(new NotifyStaff($transaction, Auth::user()->staff));
+		Notification::route('mail', $transaction->client->email)->notify(new NotifyClient($transaction));
 
 		return response()->success(compact('transaction'));
 	}
@@ -624,6 +640,10 @@ class TransactionController extends Controller
 
 		$transaction = Transaction::with('client', 'account', 'events')->findOrFail($transaction->id);
 
+		// Notify both client and staff...
+		Notification::route('mail', Auth::user()->email)->notify(new NotifyStaff($transaction, Auth::user()->staff));
+		Notification::route('mail', $transaction->client->email)->notify(new NotifyClient($transaction));
+
 		return response()->success(compact('transaction'));
 	}
 
@@ -684,6 +704,10 @@ class TransactionController extends Controller
 		$audit->save();
 
 		$transaction = Transaction::with('client', 'account', 'events')->findOrFail($transaction->id);
+
+		// Notify both client and staff...
+		Notification::route('mail', Auth::user()->email)->notify(new NotifyStaff($transaction, Auth::user()->staff));
+		Notification::route('mail', $transaction->client->email)->notify(new NotifyClient($transaction));
 
 		return response()->success(compact('transaction'));
 	}
