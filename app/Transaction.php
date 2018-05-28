@@ -20,8 +20,7 @@ class Transaction extends Model
 		'condition',
 		'org_account_id',
 		'calculated_amount',
-		'rate',
-		'wacc'
+		'rate'
 	];
 
 	/**

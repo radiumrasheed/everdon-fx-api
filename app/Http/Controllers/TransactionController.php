@@ -6,7 +6,6 @@ use App\Account;
 use App\Client;
 use App\Notifications\NotifyClient;
 use App\Notifications\NotifyStaff;
-use App\Notifications\TransactionReviewed;
 use App\Product;
 use App\Transaction;
 use App\TransactionEvent;
@@ -17,6 +16,7 @@ use App\User;
 use Carbon\Carbon;
 use Illuminate\Database\Eloquent\ModelNotFoundException;
 use Illuminate\Http\Request;
+use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Notification;
 use Illuminate\Support\Facades\Auth;
 use Illuminate\Support\Facades\Log;
@@ -31,6 +31,7 @@ class TransactionController extends Controller
 	const CANCELLED = 'cancelled';
 	const CLOSED = 'closed';
 	const RAISED = 'raised';
+
 	protected $is_systems_admin;
 	protected $is_fx_ops;
 	protected $is_fx_ops_lead;
@@ -46,7 +47,8 @@ class TransactionController extends Controller
 
 		parent::__construct();
 
-		$this->middleware(/**
+		$this->middleware(
+		/**
 		 * @param $request
 		 * @param $next
 		 * @return mixed
@@ -72,14 +74,43 @@ class TransactionController extends Controller
 	}
 
 	/**
+	 * Update WACC
+	 *
+	 * @param int $product_id
+	 * @param float $amount
+	 * @param float $calculated_amount
+	 * @return bool
+	 */
+	private function updateWACC(int $product_id, float $amount, float $calculated_amount)
+	{
+		DB::beginTransaction();
+		try {
+			$product = Product::findOrFail($product_id);
+
+			$product->seed_value = $product->seed_value + $amount;
+			$product->seed_value_ngn = $product->seed_value_ngn + $calculated_amount;
+			$product->wacc = $product->seed_value_ngn / $product->seed_value;
+			$product->save();
+
+			DB::commit();
+			$success = true;
+		} catch (\Exception $e) {
+			$success = false;
+			DB::rollback();
+
+			Log::emergency($e->getMessage());
+		}
+
+		return $success;
+	}
+
+	/**
 	 * Display a listing of the resource.
 	 *
 	 * @return \Illuminate\Http\Response
 	 */
 	public function index()
 	{
-
-
 		switch (true) {
 			case $this->is_client:
 				$transactions = User::find(Auth::user()->id)->client->transactions;
@@ -144,7 +175,6 @@ class TransactionController extends Controller
 			'amount' => 'required|numeric',
 			'account_id' => 'exists:accounts,id',
 			'rate' => 'numeric',
-			'wacc' => 'numeric',
 			'account_number' => 'string',
 			'account_name' => 'string',
 			'bank_name' => 'string',
@@ -185,7 +215,7 @@ class TransactionController extends Controller
 			return response()->error($validator->errors(), 422);
 		}
 
-		$inputs = $r->only(['client_id', 'transaction_type_id', 'transaction_mode_id', 'buying_product_id', 'selling_product_id', 'account_id', 'amount', 'rate', 'wacc']);
+		$inputs = $r->only(['client_id', 'transaction_type_id', 'transaction_mode_id', 'buying_product_id', 'selling_product_id', 'account_id', 'amount', 'rate']);
 		$transaction_status_id = TransactionStatus::where('name', 'open')->first()->id;
 
 
@@ -246,7 +276,6 @@ class TransactionController extends Controller
 			$audit->action = 'Requested Transaction';
 			$audit->amount = $transaction->amount;
 			$audit->rate = $transaction->rate;
-			$audit->wacc = $transaction->wacc;
 
 			$audit->done_by = Auth::User()->id;
 			$audit->done_at = Carbon::now();
@@ -391,7 +420,6 @@ class TransactionController extends Controller
 			'amount' => 'numeric',
 			'calculated_amount' => 'numeric',
 			'rate' => 'numeric',
-			'wacc' => 'numeric',
 		]);
 
 		// todo validate account_id belongs to client_id
@@ -400,7 +428,7 @@ class TransactionController extends Controller
 			return response()->error($validator->errors(), 422);
 		}
 
-		$inputs = $request->only(['account_id', 'amount', 'rate', 'wacc', 'org_account_id', 'condition', 'calculated_amount']);
+		$inputs = $request->only(['account_id', 'amount', 'rate', 'org_account_id', 'condition', 'calculated_amount']);
 		$pending_approval = TransactionStatus::where('name', $this::PENDING_APPROVAL)->first()->id;
 
 		$transaction->transaction_status_id = $pending_approval;
@@ -421,7 +449,6 @@ class TransactionController extends Controller
 		$audit->condition = $transaction->condition;
 		$audit->org_account_id = $transaction->org_account_id;
 		$audit->rate = $transaction->rate;
-		$audit->wacc = $transaction->wacc;
 
 		$audit->done_by = Auth::user()->id;
 		$audit->done_at = Carbon::now();
@@ -493,7 +520,6 @@ class TransactionController extends Controller
 		$audit->condition = $transaction->condition;
 		$audit->org_account_id = $transaction->org_account_id;
 		$audit->rate = $transaction->rate;
-		$audit->wacc = $transaction->wacc;
 
 		$audit->done_by = Auth::User()->id;
 		$audit->done_at = Carbon::now();
@@ -501,11 +527,17 @@ class TransactionController extends Controller
 
 		$transaction = Transaction::with('client', 'account', 'events')->findOrFail($transaction->id);
 
+
+		// Update bucket funds...
+		if ($transaction->transaction_type_id === 1 or $transaction->transaction_type_id === 2) {
+			$update = $this->updateBucket($transaction);
+		}
+
 		// Notify both client and staff...
 		Notification::route('mail', Auth::user()->email)->notify(new NotifyStaff($transaction, Auth::user()->staff));
 		Notification::route('mail', $transaction->client->email)->notify(new NotifyClient($transaction));
 
-		return response()->success(compact('transaction'));
+		return response()->success(compact('transaction', 'update'));
 	}
 
 	/**
@@ -562,19 +594,21 @@ class TransactionController extends Controller
 		$audit->condition = $transaction->condition;
 		$audit->org_account_id = $transaction->org_account_id;
 		$audit->rate = $transaction->rate;
-		$audit->wacc = $transaction->wacc;
 
-		$audit->done_by = Auth::User()->id;
+		$audit->done_by = Auth::user()->id;
 		$audit->done_at = Carbon::now();
 		$audit->save();
 
 		$transaction = Transaction::with('client', 'account', 'events')->findOrFail($transaction->id);
 
+		// Update WACC...
+		if ($this->updateWACC($transaction->buying_product_id, $transaction->amount, $transaction->calculated_amount)) {
+			return response()->success(compact('transaction'));
+		}
+
 		// Notify both client and staff...
 		Notification::route('mail', Auth::user()->email)->notify(new NotifyStaff($transaction, Auth::user()->staff));
 		Notification::route('mail', $transaction->client->email)->notify(new NotifyClient($transaction));
-
-		return response()->success(compact('transaction'));
 	}
 
 	/**
@@ -632,7 +666,6 @@ class TransactionController extends Controller
 		$audit->condition = $transaction->condition;
 		$audit->org_account_id = $transaction->org_account_id;
 		$audit->rate = $transaction->rate;
-		$audit->wacc = $transaction->wacc;
 
 		$audit->done_by = Auth::user()->id;
 		$audit->done_at = Carbon::now();
@@ -697,7 +730,6 @@ class TransactionController extends Controller
 		$audit->condition = $transaction->condition;
 		$audit->org_account_id = $transaction->org_account_id;
 		$audit->rate = $transaction->rate;
-		$audit->wacc = $transaction->wacc;
 
 		$audit->done_by = Auth::user()->id;
 		$audit->done_at = Carbon::now();
@@ -711,7 +743,6 @@ class TransactionController extends Controller
 
 		return response()->success(compact('transaction'));
 	}
-
 
 	/**
 	 * Store a newly created resource in storage.
@@ -757,7 +788,6 @@ class TransactionController extends Controller
 		return response()->success(compact('transaction'));
 	}
 
-
 	/**
 	 * Show the form for editing the specified resource.
 	 *
@@ -790,5 +820,36 @@ class TransactionController extends Controller
 	public function destroy(Transaction $transaction)
 	{
 		//
+	}
+
+	/**
+	 * Update buckets
+	 *
+	 * @param Transaction $transaction
+	 * @return bool
+	 */
+	private function updateBucket(Transaction $transaction)
+	{
+		DB::beginTransaction();
+		try {
+			// Is Purchase or Sales Transaction...
+			$buy = Product::findOrFail($transaction->buying_product_id);
+			$sell = Product::findOrFail($transaction->selling_product_id);
+
+			$buy->bucket = $buy->bucket - $transaction->amount;
+			$buy->save();
+			$sell->bucket = $sell->bucket + $transaction->calculated_amount;
+			$sell->save();
+
+			DB::commit();
+			$is_success = true;
+		} catch (\Exception $e) {
+			$is_success = false;
+//			DB::rollback();
+
+			Log::emergency($e->getMessage());
+		}
+
+		return $is_success;
 	}
 }
