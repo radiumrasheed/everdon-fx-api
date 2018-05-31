@@ -10,10 +10,11 @@ use Illuminate\Support\Facades\Auth;
 class DashboardController extends Controller
 {
 	/**
-	 * @param Request $request
+	 * Get stat figures of transactions
+	 *
 	 * @return mixed
 	 */
-	public function figures(Request $request)
+	public function figures()
 	{
 		switch (true) {
 			case $this->is_client:
@@ -37,7 +38,12 @@ class DashboardController extends Controller
 		return response()->success(compact('transactions', 'accounts', 'open', 'in_progress', 'pending_approval', 'pending_fulfilment', 'closed'));
 	}
 
-	public function recentTransactions(Request $request)
+	/**
+	 * Get last 3 transactions
+	 *
+	 * @return mixed
+	 */
+	public function recentTransactions()
 	{
 		if ($this->is_client) {
 			$client = Auth::user()->client;
@@ -54,7 +60,12 @@ class DashboardController extends Controller
 
 	}
 
-	public function bucketBalance(Request $request)
+	/**
+	 * Get bucket balance for all currencies
+	 *
+	 * @return mixed
+	 */
+	public function bucketBalance()
 	{
 		if ($this->is_staff) {
 			$products = Product::all();
@@ -62,5 +73,23 @@ class DashboardController extends Controller
 
 		return response()->success(compact('products'));
 
+	}
+
+	/**
+	 * Get WACC rate of foreign currencies
+	 *
+	 * @return
+	 */
+	public function WACCTimeline()
+	{
+		if (!$this->is_staff) {
+			return response()->error('Restricted Access');
+		}
+
+		$usd = Product::findOrFail(1)->dailyRates()->get();
+		$gbp = Product::findOrFail(2)->dailyRates()->get();
+		$eur = Product::findOrFail(3)->dailyRates()->get();
+
+		return response()->success(compact('usd', 'eur', 'gbp'));
 	}
 }

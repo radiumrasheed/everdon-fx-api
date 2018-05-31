@@ -47,7 +47,7 @@ class NotifyClient extends Notification implements ShouldQueue
 
 		return (new MailMessage)
 			->subject('Transaction Treated')
-			->greeting('Hello ' . $this->transaction->client->full_name)
+			->greeting('Hello ' . $this->transaction->client->full_name . ',')
 			->line('The transaction has been reviewed.')
 			->action('View Transaction', $url)
 			->line('Thank you for using our application!');
