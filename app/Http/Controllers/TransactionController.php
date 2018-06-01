@@ -117,23 +117,23 @@ class TransactionController extends Controller
 				break;
 
 			case $this->is_fx_ops:
-				$transactions = Transaction::where('transaction_status_id', 1)->orWhere('transaction_status_id', 2)->get();
+				$transactions = Transaction::where('transaction_status_id', 1)->orWhere('transaction_status_id', 2)->orderBy('updated_at', 'desc')->get();
 				break;
 
 			case $this->is_fx_ops_lead:
-				$transactions = Transaction::where('transaction_status_id', 2)->get();
+				$transactions = Transaction::where('transaction_status_id', 2)->orderBy('updated_at', 'desc')->get();
 				break;
 
 			case $this->is_fx_ops_manager:
-				$transactions = Transaction::where('transaction_status_id', 3)->get();
+				$transactions = Transaction::where('transaction_status_id', 3)->orderBy('updated_at', 'desc')->get();
 				break;
 
 			case $this->is_treasury_ops:
-				$transactions = Transaction::where('transaction_status_id', 4)->get();
+				$transactions = Transaction::where('transaction_status_id', 4)->orderBy('updated_at', 'desc')->get();
 				break;
 
 			case $this->is_systems_admin:
-				$transactions = Transaction::all();
+				$transactions = Transaction::orderBy('updated_at', 'desc')->get();
 				break;
 
 			default:
@@ -457,8 +457,7 @@ class TransactionController extends Controller
 		$transaction = Transaction::with('client', 'account', 'events')->findOrFail($transaction->id);
 
 		// Notify both client and staff...
-		Notification::route('mail', Auth::user()->email)->notify(new NotifyStaff($transaction, Auth::user()->staff));
-		Notification::route('mail', $transaction->client->email)->notify(new NotifyClient($transaction));
+		Notification::route('mail', Auth::user()->email)->notify(new NotifyStaff($transaction, Auth::user()->staff, $audit));
 
 		return response()->success(compact('transaction'));
 	}
@@ -534,8 +533,7 @@ class TransactionController extends Controller
 		}
 
 		// Notify both client and staff...
-		Notification::route('mail', Auth::user()->email)->notify(new NotifyStaff($transaction, Auth::user()->staff));
-		Notification::route('mail', $transaction->client->email)->notify(new NotifyClient($transaction));
+		Notification::route('mail', Auth::user()->email)->notify(new NotifyStaff($transaction, Auth::user()->staff, $audit));
 
 		return response()->success(compact('transaction', 'update'));
 	}
@@ -607,7 +605,7 @@ class TransactionController extends Controller
 		}
 
 		// Notify both client and staff...
-		Notification::route('mail', Auth::user()->email)->notify(new NotifyStaff($transaction, Auth::user()->staff));
+		Notification::route('mail', Auth::user()->email)->notify(new NotifyStaff($transaction, Auth::user()->staff, $audit));
 		Notification::route('mail', $transaction->client->email)->notify(new NotifyClient($transaction));
 	}
 

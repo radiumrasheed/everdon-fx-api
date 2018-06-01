@@ -51,7 +51,7 @@ class Client extends Model
 	 */
 	public function transactions()
 	{
-		return $this->hasMany('App\Transaction', 'client_id');
+		return $this->hasMany('App\Transaction', 'client_id')->orderByDesc('updated_at');
 	}
 
 	/**

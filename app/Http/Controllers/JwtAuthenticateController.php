@@ -12,6 +12,7 @@ use App\User;
 use Illuminate\Database\Eloquent\ModelNotFoundException;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Auth;
+use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Hash;
 use Illuminate\Support\Facades\Validator;
 use Tymon\JWTAuth\Exceptions\JWTException;
@@ -128,70 +129,57 @@ class JwtAuthenticateController extends Controller
 	/**
 	 * Create a User
 	 *
-	 * @param Request $request
+	 * @param Request $req
 	 * @return
 	 */
-	public function createUser(Request $request)
+	public function createUser(Request $req)
 	{
 		// Validate the request...
-		$validator = Validator::make($request->all(), [
+		$validator = Validator::make($req->all(), [
 			'full_name' => 'required',
 			'email' => 'required|unique:users|email',
 			'phone' => 'required',
-			'password' => 'required',
-			'cooperate' => 'boolean',
+			'password' => 'required|string|confirmed|min:6',
+			'password_confirmation' => 'same:password',
+			'is_cooperate' => 'boolean',
+			'rc_number' => 'unique:clients,rc_number'
 		]);
-
 		if ($validator->fails()) {
 			return response()->error($validator->errors(), 422);
 		}
 
-
 		// Get details to be saved based on client type...
-		if ($request->cooperate) {
+		if ($req->is_cooperate) {
 			$_client_type_id = ClientType::where('name', 'cooperate')->first()->id;
-			$request->merge(['client_type' => $_client_type_id]);
-			$_client = $request->only([
+			$req->merge(['client_type' => $_client_type_id]);
+			$_client = $req->only([
 				'full_name', 'email', 'phone', 'bvn', 'office_address', 'rc_number', 'client_type'
 			]);
 		} else {
 			$_client_type_id = ClientType::where('name', 'individual')->first()->id;
-			$request->merge(['client_type' => $_client_type_id]);
-			$_client = $request->only([
+			$req->merge(['client_type' => $_client_type_id]);
+			$_client = $req->only([
 				'full_name', 'email', 'phone', 'bvn', 'office_address', 'marital_status', 'date_of_birth', 'residential_address', 'occupation',
 				'nok_full_name', 'nok_phone', 'referee', 'client_type'
 			]);
 		}
+		$_user = ['name' => $req->full_name, 'email' => $req->email, 'password' => Hash::make($req->password)];
 
-		$_user = ['name' => $request->full_name, 'email' => $request->email, 'password' => Hash::make($request->password)];
-
-		$_role = Role::where('name', 'client')->first();
-
-		/*$_account = $request->only([
-			'account_name', 'account_number', 'bvn', 'bank_name'
-		]);*/
-
+		// Create User & Client account...
 		try {
-			// create client
-			$client = Client::firstOrCreate(['email' => $request->email], $_client);
-			// $client->accounts()->save($account);
-			// $client->save();
+			$_role = Role::where('name', 'client')->firstOrFail();
 
+			// create client
+			DB::beginTransaction();
+			$client = Client::firstOrCreate(['email' => $req->email], $_client);
 			$user = User::create($_user);
 			$user->client()->save($client);
 			$user->roles()->attach($_role->id);
+			DB::commit();
 		} catch (\Exception $e) {
-//			if ($user) {
-//				$user->client()->delete();
-//				$user->delete();
-//			}
-
+			DB::rollBack();
 			return response()->error($e->getMessage());
 		}
-
-		// attach account to client
-//		$client->save();
-
 		$token = JWTAuth::fromUser($user);
 
 		return response()->success(compact('client', 'user', 'token'));

@@ -4,6 +4,7 @@ namespace App\Notifications;
 
 use App\Staff;
 use App\Transaction;
+use App\TransactionEvent;
 use Illuminate\Bus\Queueable;
 use Illuminate\Notifications\Notification;
 use Illuminate\Contracts\Queue\ShouldQueue;
@@ -15,17 +16,20 @@ class NotifyStaff extends Notification implements ShouldQueue
 
 	public $transaction;
 	public $staff;
+	public $event;
 
 	/**
 	 * Create a new notification instance.
 	 *
 	 * @param Transaction $transaction
 	 * @param Staff $staff
+	 * @param TransactionEvent $event
 	 */
-	public function __construct(Transaction $transaction, Staff $staff)
+	public function __construct(Transaction $transaction, Staff $staff, TransactionEvent $event)
 	{
 		$this->transaction = $transaction;
 		$this->staff = $staff;
+		$this->event = $event;
 	}
 
 	/**
@@ -50,9 +54,10 @@ class NotifyStaff extends Notification implements ShouldQueue
 		$url = config('custom.client.host') . '/#/admin/transaction/details/' . $this->transaction->id;
 
 		return (new MailMessage)
-			->subject('Transaction Treated')
+			->subject($this->event->action)
 			->greeting('Hello ' . $this->staff->full_name . ',')
 			->line('The transaction has been reviewed.')
+			->line('"' . $this->event->comment . '"')
 			->action('View Transaction', $url)
 			->line('Thank you for using our application!');
 
