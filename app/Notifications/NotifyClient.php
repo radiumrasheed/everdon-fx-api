@@ -3,6 +3,7 @@
 namespace App\Notifications;
 
 use App\Transaction;
+use App\TransactionEvent;
 use Illuminate\Bus\Queueable;
 use Illuminate\Notifications\Notification;
 use Illuminate\Contracts\Queue\ShouldQueue;
@@ -13,15 +14,18 @@ class NotifyClient extends Notification implements ShouldQueue
 	use Queueable;
 
 	public $transaction;
+	public $event;
 
 	/**
 	 * Create a new notification instance.
 	 *
 	 * @param Transaction $transaction
+	 * @param TransactionEvent $event
 	 */
-	public function __construct(Transaction $transaction)
+	public function __construct(Transaction $transaction, TransactionEvent $event)
 	{
 		$this->transaction = $transaction;
+		$this->event = $event;
 	}
 
 	/**
@@ -45,10 +49,24 @@ class NotifyClient extends Notification implements ShouldQueue
 	{
 		$url = config('custom.client.host') . '/#/me/transaction/details/' . $this->transaction->id;
 
+		switch ((string)$this->event->action) {
+			case 'Transaction Rejected':
+				$message = 'A transaction has been rejected and awaiting review.';
+				break;
+
+			case 'Fulfilled and Closed Transaction':
+				$message = 'Your transaction has been fulfilled.';
+				break;
+
+			default:
+				$greeting = 'Hello,';
+				$message = 'A transaction has been reviewed.';
+		}
+
 		return (new MailMessage)
-			->subject('Transaction Treated')
+			->subject($this->event->action)
 			->greeting('Hello ' . $this->transaction->client->full_name . ',')
-			->line('The transaction has been reviewed.')
+			->line($message)
 			->action('View Transaction', $url)
 			->line('Thank you for using our application!');
 

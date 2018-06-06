@@ -25,7 +25,7 @@ class NotifyStaff extends Notification implements ShouldQueue
 	 * @param Staff $staff
 	 * @param TransactionEvent $event
 	 */
-	public function __construct(Transaction $transaction, Staff $staff, TransactionEvent $event)
+	public function __construct(Transaction $transaction, Staff $staff = null, TransactionEvent $event = null)
 	{
 		$this->transaction = $transaction;
 		$this->staff = $staff;
@@ -53,13 +53,46 @@ class NotifyStaff extends Notification implements ShouldQueue
 	{
 		$url = config('custom.client.host') . '/#/admin/transaction/details/' . $this->transaction->id;
 
+		if ($this->event === null) {
+			return (new MailMessage)
+				->subject('New Transaction Request')
+				->greeting('Dear FX Ops Member,')
+				->line('A new transaction has been requested and awaiting review.')
+				->action('View Transaction', $url);
+		}
+
+		switch ((string)$this->event->action) {
+			case 'Approved Transaction':
+				$greeting = 'Dear Treasury Ops Member,';
+				$message = 'A transaction has been approved and awaiting fulfilment.';
+				break;
+
+			case 'Treated Transaction':
+				$greeting = 'Dear FX Ops Lead/Manager Member,';
+				$message = 'A transaction has been treated and awaiting approval.';
+				break;
+
+			case 'New Transaction Request':
+				$greeting = 'Dear FX Ops Member,';
+				$message = 'A new transaction has been requested and awaiting review.';
+				break;
+
+			case 'Transaction Rejected':
+				$greeting = 'Dear FX Ops Member,';
+				$message = 'A transaction has been rejected and awaiting review.';
+				break;
+
+			default:
+				$greeting = 'Hello,';
+				$message = 'A transaction has been reviewed.';
+		}
+
 		return (new MailMessage)
 			->subject($this->event->action)
-			->greeting('Hello ' . $this->staff->full_name . ',')
-			->line('The transaction has been reviewed.')
-			->line('"' . $this->event->comment . '"')
-			->action('View Transaction', $url)
-			->line('Thank you for using our application!');
+			->greeting($greeting)
+			->line($message)
+			->line('with comment by ' . $this->event->doneBy->name . ': "' . $this->event->comment . '"')
+			->action('View Transaction', $url);
 
 		/*return (new MailMessage)->view(
 			'emails.transaction', ['transaction' => $this->transaction]
