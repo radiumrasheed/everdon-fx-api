@@ -14,7 +14,8 @@ class CreateTransactionsTable extends Migration
 	public function up()
 	{
 		Schema::create('transactions', function (Blueprint $table) {
-			$table->increments('id');
+			$table->uuid('id');
+			$table->primary('id');
 
 			$table->bigInteger('transaction_type_id');
 			$table->bigInteger('transaction_mode_id');
@@ -28,7 +29,6 @@ class CreateTransactionsTable extends Migration
 
 			$table->decimal('amount', 13, 4);
 			$table->decimal('rate', 13, 4)->nullable();
-			$table->decimal('wacc', 13, 4)->nullable();
 			$table->decimal('calculated_amount', 13, 4)->nullable();
 
 			$table->string('country')->nullable();

@@ -17,6 +17,10 @@ class CreateProductsTable extends Migration
 			$table->increments('id');
 			$table->string('name');
 			$table->string('description');
+			$table->decimal('wacc', 13, 4)->nullable();
+			$table->decimal('seed_value', 13, 4)->nullable();
+			$table->decimal('seed_value_ngn', 13, 4)->nullable();
+			$table->decimal('bucket', 13, 4)->nullable();
 			$table->timestamps();
 		});
 	}

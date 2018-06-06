@@ -15,7 +15,8 @@
 		"laravel/tinker": "^1.0",
 		"pusher/pusher-php-server": "~3.0",
 		"tymon/jwt-auth": "0.5.*",
-		"zizaco/entrust": "dev-laravel-5"
+		"webpatser/laravel-uuid": "^3.0",
+		"zizaco/entrust": "dev-master"
 	},
 	"require-dev": {
 		"filp/whoops": "^2.0",

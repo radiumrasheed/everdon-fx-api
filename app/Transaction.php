@@ -2,12 +2,16 @@
 
 namespace App;
 
+use App\Traits\Uuids;
 use Illuminate\Database\Eloquent\Model;
 
 class Transaction extends Model
 {
-	//
+	use Uuids;
+
 	protected $table = 'transactions';
+
+	public $incrementing = false;
 
 	protected $fillable = [
 		'client_id',

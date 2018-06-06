@@ -214,6 +214,7 @@ return [
 
 		'JWTAuth' => Tymon\JWTAuth\Facades\JWTAuth::class,
 		'JWTFactory' => Tymon\JWTAuth\Facades\JWTFactory::class,
+		'Uuid' => Webpatser\Uuid\Uuid::class,
 		'Entrust' => Zizaco\Entrust\EntrustServiceProvider::class
 	],
 

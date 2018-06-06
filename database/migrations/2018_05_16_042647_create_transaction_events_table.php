@@ -15,7 +15,7 @@ class CreateTransactionEventsTable extends Migration
 	{
 		Schema::create('transaction_events', function (Blueprint $table) {
 			$table->increments('id');
-			$table->bigInteger('transaction_id');
+			$table->uuid('transaction_id');
 			$table->bigInteger('transaction_status_id');
 			$table->bigInteger('org_account_id')->nullable();
 
@@ -26,7 +26,6 @@ class CreateTransactionEventsTable extends Migration
 			$table->decimal('amount', 13, 4)->nullable();
 			$table->decimal('calculated_amount', 13, 4)->nullable();
 			$table->decimal('rate', 13, 4)->nullable();
-			$table->decimal('wacc', 13, 4)->nullable();
 
 			$table->bigInteger('done_by');
 			$table->dateTime('done_at');
