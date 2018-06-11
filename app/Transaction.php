@@ -3,11 +3,12 @@
 namespace App;
 
 use App\Traits\Uuids;
+use Carbon\Carbon;
 use Illuminate\Database\Eloquent\Model;
+use Webpatser\Uuid\Uuid;
 
 class Transaction extends Model
 {
-	use Uuids;
 
 	protected $table = 'transactions';
 
@@ -26,6 +27,27 @@ class Transaction extends Model
 		'calculated_amount',
 		'rate'
 	];
+
+	/**
+	 * Generate a unique transaction reference
+	 *
+	 * @return string
+	 */
+	protected function generateTransactionRef()
+	{
+		return 'FX' . $this->attributes['transaction_type_id'] . $this->attributes['transaction_mode_id'] . '/' . Carbon::now()->timestamp;
+	}
+
+	protected static function boot()
+	{
+		parent::boot();
+
+		static::creating(function (Model $model) {
+			$model->{$model->getKeyName()} = Uuid::generate()->string;
+
+			$model->transaction_ref = $model->generateTransactionRef();
+		});
+	}
 
 	/**
 	 * Get the client of a transaction
