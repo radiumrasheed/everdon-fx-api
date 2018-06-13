@@ -2,7 +2,6 @@
 
 namespace App\Http\Controllers;
 
-use App\Account;
 use App\Client;
 use App\ClientType;
 use App\Permission;
@@ -172,6 +171,7 @@ class JwtAuthenticateController extends Controller
 			// create client
 			DB::beginTransaction();
 			$client = Client::firstOrCreate(['email' => $req->email], $_client);
+			$client->client_type = $_client_type_id;
 			$user = User::create($_user);
 			$user->client()->save($client);
 			$user->roles()->attach($_role->id);
@@ -184,6 +184,7 @@ class JwtAuthenticateController extends Controller
 
 		return response()->success(compact('client', 'user', 'token'));
 	}
+
 
 	/**
 	 * Create a role
@@ -201,6 +202,7 @@ class JwtAuthenticateController extends Controller
 		return response()->json("created");
 	}
 
+
 	/**
 	 * Create a Permission
 	 *
@@ -216,6 +218,7 @@ class JwtAuthenticateController extends Controller
 
 		return response()->json("created");
 	}
+
 
 	/**
 	 * Assign a Role to a User
@@ -234,6 +237,7 @@ class JwtAuthenticateController extends Controller
 
 		return response()->json("created");
 	}
+
 
 	/**
 	 * Attach a permission to a Role

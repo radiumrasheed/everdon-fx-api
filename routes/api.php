@@ -35,9 +35,9 @@ Route::group(['middleware' => ['role:systems-admin']], function () {
 	Route::post('assign-role', 'JwtAuthenticateController@assignRole');
 	// Route to attache permission to a role
 	Route::post('attach-permission', 'JwtAuthenticateController@attachPermission');
-
-	// Protected route...
+	// Route to get all users
 	Route::get('users', 'JwtAuthenticateController@index');
+
 });
 
 
@@ -50,18 +50,21 @@ Route::group(['middleware' => ['role:systems-admin|fx-ops|fx-ops-lead|fx-ops-man
 	Route::get('clients/search/{term}', 'ClientController@search');
 	Route::get('clients/{id}', 'ClientController@show');
 	Route::get('clients/{client_id}/accounts', 'ClientController@accounts');
-	Route::put('clients/{id}', 'ClientController@update');
+	Route::post('clients/{id}/upload', 'ClientController@updateAvatar');
+	Route::post('clients/{id}', 'ClientController@update');
 	Route::get('clients', 'ClientController@index');
 
+
 	// Transaction Routes...
-	Route::get('transactions', 'TransactionController@index');
-	Route::get('transactions/{id}', 'TransactionController@show');
-	Route::post('transactions', 'TransactionController@requestTransaction');
 	Route::put('transactions/{id}/treat', 'TransactionController@treatTransaction');
 	Route::put('transactions/{id}/approve', 'TransactionController@approveTransaction');
 	Route::put('transactions/{id}/fulfil', 'TransactionController@fulfilTransaction');
 	Route::patch('transactions/{id}/cancel', 'TransactionController@cancelTransaction');
 	Route::patch('transactions/{id}/reject', 'TransactionController@rejectTransaction');
+	Route::get('transactions/{id}', 'TransactionController@show');
+	Route::post('transactions', 'TransactionController@requestTransaction');
+	Route::get('transactions', 'TransactionController@index');
+
 
 	// Account Routes...
 	Route::resource('accounts', 'AccountController')->only('index');
@@ -69,9 +72,9 @@ Route::group(['middleware' => ['role:systems-admin|fx-ops|fx-ops-lead|fx-ops-man
 
 	// Dashboard Routes...
 	Route::get('dashboard/figures', 'DashboardController@figures');
-	Route::get('dashboard/recent_transactions', 'DashboardController@recentTransactions');
 	Route::get('dashboard/buckets', 'DashboardController@bucketBalance');
 	Route::get('dashboard/timeline', 'DashboardController@WACCTimeline');
+	Route::get('dashboard/recent_transactions', 'DashboardController@recentTransactions');
 
 });
 

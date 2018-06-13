@@ -7,7 +7,9 @@ use App\ClientType;
 use Illuminate\Database\Eloquent\ModelNotFoundException;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Auth;
+use Illuminate\Support\Facades\Storage;
 use Illuminate\Support\Facades\Validator;
+use JD\Cloudder\Facades\Cloudder;
 
 class ClientController extends Controller
 {
@@ -15,11 +17,11 @@ class ClientController extends Controller
 	/**
 	 * Get a clients' accounts
 	 *
-	 * @param Request $request
+	 * @param Request $req
 	 * @param $client_id
 	 * @return mixed
 	 */
-	public function accounts(Request $request, $client_id)
+	public function accounts(Request $req, $client_id)
 	{
 		if (!$this->is_staff) {
 			return response()->error('You don\'t have the rights to make this request');
@@ -51,13 +53,13 @@ class ClientController extends Controller
 	/**
 	 * Store a newly created resource in storage.
 	 *
-	 * @param  \Illuminate\Http\Request $request
+	 * @param  \Illuminate\Http\Request $req
 	 * @return \Illuminate\Http\Response
 	 */
-	public function storeIndividual(Request $request)
+	public function storeIndividual(Request $req)
 	{
 		// Validate the request...
-		$validator = Validator::make($request->all(), [
+		$validator = Validator::make($req->all(), [
 			'email' => 'required|unique:clients|email',
 			'full_name' => 'required',
 			'phone' => 'required',
@@ -67,11 +69,11 @@ class ClientController extends Controller
 			return response()->error($validator->errors(), 422);
 		}
 
-		$_client = $request->only([
+		$_client = $req->only([
 			'full_name', 'email', 'phone', 'bvn', 'office_address', 'marital_status', 'date_of_birth', 'residential_address', 'occupation',
 			'nok_full_name', 'nok_phone', 'referee'
 		]);
-		/*$_account = $request->only([
+		/*$_account = $req->only([
 			'account_name', 'account_number', 'bvn', 'bank_name', 'client_id'
 		]);*/
 		$client_type_id = ClientType::where('name', 'individual')->first()->id;
@@ -83,15 +85,15 @@ class ClientController extends Controller
 		$client->save();
 
 		/*$_account = [
-			'name' => $request->account_name,
-			'number' => $request->account_number,
+			'name' => $req->account_name,
+			'number' => $req->account_number,
 			'bvn',
-			'bank' => $request->bank_name,
+			'bank' => $req->bank_name,
 			'client_id' => $client->id
 		];*/
 
 		// create account
-//		$account = Account::firstOrCreate(['number' => $request->account_number], $_account);
+//		$account = Account::firstOrCreate(['number' => $req->account_number], $_account);
 
 		// attach account to client
 //		$client->accounts()->save($account);
@@ -101,13 +103,13 @@ class ClientController extends Controller
 
 
 	/**
-	 * @param Request $request
+	 * @param Request $req
 	 * @return mixed
 	 */
-	public function storeCooperate(Request $request)
+	public function storeCooperate(Request $req)
 	{
 		// Validate the request...
-		$validator = Validator::make($request->all(), [
+		$validator = Validator::make($req->all(), [
 			'email' => 'required|unique:clients|email',
 			'full_name' => 'required',
 			'phone' => 'required',
@@ -118,7 +120,7 @@ class ClientController extends Controller
 			return response()->error($validator->errors(), 422);
 		}
 
-		$inputs = $request->only(['full_name', 'email', 'phone', 'bvn', 'office_address', 'rc_number']);
+		$inputs = $req->only(['full_name', 'email', 'phone', 'bvn', 'office_address', 'rc_number']);
 		$client_type_id = ClientType::where('name', 'cooperate')->first()->id;
 
 		$client = new Client($inputs);
@@ -148,11 +150,11 @@ class ClientController extends Controller
 	/**
 	 * Search for a client
 	 *
-	 * @param Request $request
+	 * @param Request $req
 	 * @param $term
 	 * @return mixed
 	 */
-	public function search(Request $request, $term)
+	public function search(Request $req, $term)
 	{
 		if (!$this->is_staff) {
 			return response()->error('Unauthorised Access', 401);
@@ -167,55 +169,91 @@ class ClientController extends Controller
 	/**
 	 * Update the specified resource in storage.
 	 *
-	 * @param  \Illuminate\Http\Request $request
-	 * @param  \App\Client $client_
+	 * @param  \Illuminate\Http\Request $req
+	 * @param  \App\Client $client_id
 	 * @return \Illuminate\Http\Response
 	 */
-	public function update(Request $request, $client_)
+	public function update(Request $req, $client_id)
 	{
+		// Fetch the client...
+		try {
+			$client = Client::where('id', $client_id)->firstOrFail();
+		} catch (ModelNotFoundException $e) {
+			return response()->error('Client Profile does not exist');
+		}
+
 		// Validate the request...
-		$validator = Validator::make($request->all(), [
-			'email' => 'required|exists:clients|email',
+		$validator = Validator::make($req->all(), [
+//			'email' => 'required|exists:clients|email',
 			'full_name' => 'required',
 			'phone' => 'required',
+//			'identification_image' => 'mimes:jpeg,bmp,jpg,png|between:1, 6000',
 		]);
 
 		if ($validator->fails()) {
 			return response()->error($validator->errors(), 422);
 		}
 
-		try {
-			$client = Client::where('id', $client_)->firstOrFail();
-		} catch (ModelNotFoundException $e) {
-			return response()->error('Client Profile does not exist');
-		}
-
 		// Get inputs based on client type...
-		if ($client->client_type === 1) {
-			$inputs = $request->only(['full_name', 'email', 'phone', 'bvn', 'office_address', 'marital_status',
-				'residential_address',
-				'occupation',
-				'nok_full_name',
-				'nok_phone',
-				'referee_1',
-				'referee_2',
-				'referee_3',
-				'referee_4',
-				'date_of_birth',
+		if ($client->client_type === 1 && $this->is_staff) {
+			$inputs = $req->only(['full_name', 'phone', 'bvn', 'office_address', 'marital_status', 'identification', 'identification_number',
+				'residential_address', 'occupation', 'nok_full_name', 'nok_phone', 'referee_1', 'referee_2', 'referee_3', 'referee_4', 'date_of_birth',
 			]);
-		} else {
-			$inputs = $request->only(['full_name', 'email', 'phone', 'bvn', 'office_address', 'rc_number']);
+		} elseif ($client->client_type === 1 && $this->is_client) {
+			$inputs = $req->only(['full_name', 'phone', 'bvn', 'office_address', 'marital_status', 'identification', 'identification_number',
+				'residential_address', 'occupation', 'nok_full_name', 'nok_phone', 'date_of_birth']);
+		} elseif ($client->client_type === 2) {
+			$inputs = $req->only(['full_name', 'phone', 'bvn', 'office_address', 'rc_number']);
 		}
 
 		// Update Profile...
 		try {
 			$client->update($inputs);
+			if ($req->hasFile('identification_image')) {
+				Storage::delete($client->identification_image);
+				$client->identification_image = $req->identification_image->store('identification_files');
+			}
 			$client->save();
 		} catch (\Exception $e) {
 			return response()->error('Profile Update failed: ' . $e->getMessage());
 		}
 
-		return response()->success(compact('client', 'client_', 'inputs'));
+		return response()->success(compact('client'));
+	}
+
+
+	/**
+	 * Update client avatar
+	 *
+	 * @param Request $req
+	 * @param $client_id
+	 * @return object
+	 */
+	public function updateAvatar(Request $req, $client_id)
+	{
+		// Fetch the client...
+		try {
+			$client = Client::where('id', $client_id)->firstOrFail();
+		} catch (ModelNotFoundException $e) {
+			return response()->error('Client Profile does not exist');
+		}
+
+		$this->validate($req, [
+			'avatar' => 'required|mimes:jpeg,bmp,jpg,png|between:1, 6000',
+		]);
+
+		if ($req->file('avatar')->isValid()) {
+			Cloudder::upload($req->avatar, null);
+
+			$image_url = Cloudder::show(Cloudder::getPublicId(), ["width" => 200, "height" => 200]);
+
+			$client->update(['avatar' => $image_url]);
+		}
+
+
+		return response()->success(compact('client'));
+
+
 	}
 
 
