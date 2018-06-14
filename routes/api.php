@@ -71,6 +71,7 @@ Route::group(['middleware' => ['role:systems-admin|fx-ops|fx-ops-lead|fx-ops-man
 
 
 	// Dashboard Routes...
+	Route::get('dashboard/counts', 'DashboardController@counts');
 	Route::get('dashboard/figures', 'DashboardController@figures');
 	Route::get('dashboard/buckets', 'DashboardController@bucketBalance');
 	Route::get('dashboard/timeline', 'DashboardController@WACCTimeline');

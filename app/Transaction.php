@@ -49,6 +49,41 @@ class Transaction extends Model
 		});
 	}
 
+	public function scopeInProgress($query)
+	{
+		return $query->where('transaction_status_id', 2);
+	}
+
+	public function scopeOpen($query)
+	{
+		return $query->where('transaction_status_id', 1);
+	}
+
+	public function scopePendingApproval($query)
+	{
+		return $query->where('transaction_status_id', 3);
+	}
+
+	public function scopePendingFulfilment($query)
+	{
+		return $query->where('transaction_status_id', 4);
+	}
+
+	public function scopeCancelled($query)
+	{
+		return $query->where('transaction_status_id', 5);
+	}
+
+	public function scopeClosed($query)
+	{
+		return $query->where('transaction_status_id', 6);
+	}
+
+	public function scopeRaised($query)
+	{
+		return $query->where('transaction_status_id', 7);
+	}
+
 	/**
 	 * Get the client of a transaction
 	 */

@@ -16,11 +16,13 @@ use App\User;
 use Carbon\Carbon;
 use Illuminate\Database\Eloquent\ModelNotFoundException;
 use Illuminate\Http\Request;
+use Illuminate\Support\Facades\Artisan;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Notification;
 use Illuminate\Support\Facades\Auth;
 use Illuminate\Support\Facades\Log;
 use Illuminate\Support\Facades\Validator;
+use SebastianBergmann\Environment\Console;
 
 class TransactionController extends Controller
 {
@@ -74,6 +76,45 @@ class TransactionController extends Controller
 	}
 
 	/**
+	 * Update buckets using transactions
+	 *
+	 * @param Transaction $transaction
+	 * @return bool
+	 */
+	private function updateBucket(Transaction $transaction)
+	{
+		DB::beginTransaction();
+		try {
+			// Is Purchase or Sales Transaction...
+			$buy = Product::findOrFail($transaction->buying_product_id);
+			$sell = Product::findOrFail($transaction->selling_product_id);
+
+			// Do calculation...
+			$buy->prev_bucket = $buy->bucket;
+			$buy->prev_bucket_local = $buy->bucket_local;
+			$buy->bucket = $buy->bucket - $transaction->amount;
+			$buy->bucket_local = $buy->wacc * $buy->bucket;
+			$buy->save();
+
+			$sell->prev_bucket = $sell->bucket;
+			$sell->prev_bucket_local = $sell->bucket_local;
+			$sell->bucket = $sell->bucket + $transaction->calculated_amount;
+			$sell->bucket_local = $sell->wacc * $sell->bucket;
+			$sell->save();
+
+			DB::commit();
+			$is_success = true;
+		} catch (\Exception $e) {
+			$is_success = false;
+			DB::rollback();
+
+			Log::emergency($e->getMessage());
+		}
+
+		return $is_success;
+	}
+
+	/**
 	 * Update WACC
 	 *
 	 * @param int $product_id
@@ -87,13 +128,23 @@ class TransactionController extends Controller
 		try {
 			$product = Product::findOrFail($product_id);
 
+			// Store prev values...
+			$product->prev_wacc = $product->wacc;
+			$product->prev_seed_value = $product->seed_value;
+			$product->prev_seed_value_local = $product->seed_value_local;
+
+			// Calculate new values...
 			$product->seed_value = $product->seed_value + $amount;
-			$product->seed_value_ngn = $product->seed_value_ngn + $calculated_amount;
-			$product->wacc = $product->seed_value_ngn / $product->seed_value;
+			$product->seed_value_local = $product->seed_value_local + $calculated_amount;
+			$product->wacc = $product->seed_value_local / $product->seed_value;
 			$product->save();
 
 			DB::commit();
 			$success = true;
+
+			//Update timemline...
+			Artisan::call('update:timeline');
+
 		} catch (\Exception $e) {
 			$success = false;
 			DB::rollback();
@@ -184,7 +235,7 @@ class TransactionController extends Controller
 		if ($this->is_client) {
 			// Determine transaction type...
 			$have_foreign = in_array($req->selling_product_id, ['1', '2', '3']);
-			$want_foreign = in_array($req->buying_product_id, ['1', '2', '2']);
+			$want_foreign = in_array($req->buying_product_id, ['1', '2', '3']);
 			$have_local = in_array($req->selling_product_id, ['4']);
 			$want_local = in_array($req->buying_product_id, ['4']);
 			$same = $req->buying_product_id == $req->selling_product_id;
@@ -337,7 +388,7 @@ class TransactionController extends Controller
 				$type = 'cross';
 				break;
 			default:
-				return response()->error('Unkwon Transaction Type');
+				return response()->error('Unknown Transaction Type');
 		}
 
 		// Determine transaction mode...
@@ -840,36 +891,5 @@ class TransactionController extends Controller
 	public function destroy(Transaction $transaction)
 	{
 		//
-	}
-
-	/**
-	 * Update buckets
-	 *
-	 * @param Transaction $transaction
-	 * @return bool
-	 */
-	private function updateBucket(Transaction $transaction)
-	{
-		DB::beginTransaction();
-		try {
-			// Is Purchase or Sales Transaction...
-			$buy = Product::findOrFail($transaction->buying_product_id);
-			$sell = Product::findOrFail($transaction->selling_product_id);
-
-			$buy->bucket = $buy->bucket - $transaction->amount;
-			$buy->save();
-			$sell->bucket = $sell->bucket + $transaction->calculated_amount;
-			$sell->save();
-
-			DB::commit();
-			$is_success = true;
-		} catch (\Exception $e) {
-			$is_success = false;
-//			DB::rollback();
-
-			Log::emergency($e->getMessage());
-		}
-
-		return $is_success;
 	}
 }

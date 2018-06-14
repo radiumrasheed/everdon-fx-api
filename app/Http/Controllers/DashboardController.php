@@ -92,4 +92,16 @@ class DashboardController extends Controller
 
 		return response()->success(compact('usd', 'eur', 'gbp'));
 	}
+
+	public function counts()
+	{
+		$open = Transaction::open()->count();
+		$in_progress = Transaction::inProgress()->count();
+		$pending_approval = Transaction::pendingApproval()->count();
+		$pending_fulfilment = Transaction::pendingFulfilment()->count();
+		$cancelled = Transaction::cancelled()->count();
+		$closed = Transaction::closed()->count();
+
+		return response()->success(compact('open', 'in_progress', 'pending_approval', 'pending_fulfilment', 'cancelled', 'closed'));
+	}
 }
