@@ -75,10 +75,11 @@ Route::group(['middleware' => ['role:systems-admin|fx-ops|fx-ops-lead|fx-ops-man
 	Route::get('dashboard/figures', 'DashboardController@figures');
 	Route::get('dashboard/buckets', 'DashboardController@bucketBalance');
 	Route::get('dashboard/timeline', 'DashboardController@WACCTimeline');
-	Route::get('dashboard/recent_transactions', 'DashboardController@recentTransactions');
+	Route::get('dashboard/recent_transactions', 'TransactionController@recentTransactions');
+	Route::get('dashboard/recent_events', 'DashboardController@recentEvents');
 
 });
 
 
-// Public Routes for Fillables...
+// Public Routes for fill-ables...
 Route::resource('products', 'ProductController')->only('index');

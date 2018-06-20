@@ -4,7 +4,7 @@ namespace App\Http\Controllers;
 
 use App\Product;
 use App\Transaction;
-use Illuminate\Http\Request;
+use App\TransactionEvent;
 use Illuminate\Support\Facades\Auth;
 
 class DashboardController extends Controller
@@ -36,28 +36,6 @@ class DashboardController extends Controller
 		}
 
 		return response()->success(compact('transactions', 'accounts', 'open', 'in_progress', 'pending_approval', 'pending_fulfilment', 'closed'));
-	}
-
-	/**
-	 * Get last 3 transactions
-	 *
-	 * @return mixed
-	 */
-	public function recentTransactions()
-	{
-		if ($this->is_client) {
-			$client = Auth::user()->client;
-
-			$transactions = $client->transactions()
-				->select(['id', 'amount', 'transaction_status_id', 'buying_product_id', 'selling_product_id', 'client_id', 'account_id', 'updated_at'])
-				->orderBy('updated_at', 'desc')
-				->limit(3)->get();
-			$transactions->loadMissing('events:id,done_by,transaction_id', 'events.doneBy:id,name,email', 'account:id,number');
-
-		}
-
-		return response()->success(compact('transactions'));
-
 	}
 
 	/**
@@ -103,5 +81,17 @@ class DashboardController extends Controller
 		$closed = Transaction::closed()->count();
 
 		return response()->success(compact('open', 'in_progress', 'pending_approval', 'pending_fulfilment', 'cancelled', 'closed'));
+	}
+
+	public function recentEvents()
+	{
+		if (!$this->is_staff) {
+			return response()->error('You don\'t have permission to make this request', 403);
+		}
+
+		$events = TransactionEvent::orderBy('updated_at', 'desc')->limit(5)->get();
+		$events->loadMissing('doneBy:id,name,email');
+
+		return response()->success(compact('events'));
 	}
 }

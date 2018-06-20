@@ -49,14 +49,19 @@ class Transaction extends Model
 		});
 	}
 
+	public function scopeOpen($query)
+	{
+		return $query->where('transaction_status_id', 1);
+	}
+
 	public function scopeInProgress($query)
 	{
 		return $query->where('transaction_status_id', 2);
 	}
 
-	public function scopeOpen($query)
+	public function scopeOpenOrInProgress($query)
 	{
-		return $query->where('transaction_status_id', 1);
+		return $query->where('transaction_status_id', 1)->orWhere('transaction_status_id', 2);
 	}
 
 	public function scopePendingApproval($query)
@@ -82,6 +87,12 @@ class Transaction extends Model
 	public function scopeRaised($query)
 	{
 		return $query->where('transaction_status_id', 7);
+	}
+
+	public function scopeRecent($query)
+	{
+		return $query->select(['id', 'amount', 'transaction_status_id', 'transaction_ref', 'buying_product_id', 'selling_product_id', 'client_id', 'account_id', 'updated_at'])
+			->orderBy('updated_at', 'desc');
 	}
 
 	/**

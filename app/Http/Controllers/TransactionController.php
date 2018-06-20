@@ -815,6 +815,59 @@ class TransactionController extends Controller
 		return response()->success(compact('transaction'));
 	}
 
+
+	/**
+	 * Get last 3 transactions
+	 *
+	 * @return mixed
+	 */
+	public function recentTransactions()
+	{
+		switch (true) {
+			case $this->is_client:
+				$client = Auth::user()->client;
+
+				$transactions = $client->transactions()
+					->select(['id', 'amount', 'transaction_status_id', 'buying_product_id', 'selling_product_id', 'client_id', 'account_id', 'updated_at'])
+					->orderBy('updated_at', 'desc')
+					->limit(3)->get();
+				$transactions->loadMissing('events:id,done_by,transaction_id', 'events.doneBy:id,name,email', 'account:id,number');
+				break;
+
+			case $this->is_fx_ops:
+				$transactions = Transaction::openOrInProgress()->recent()->limit(5)->get();
+				$transactions->loadMissing('events:id,done_by,transaction_id', 'client:id,full_name,occupation', 'events.doneBy:id,name,email', 'account:id,number');
+				break;
+
+			case $this->is_fx_ops_lead:
+				$transactions = Transaction::pendingApproval()->recent()->limit(5)->get();
+				$transactions->loadMissing('events:id,done_by,transaction_id', 'client:id,full_name,occupation', 'events.doneBy:id,name,email', 'account:id,number');
+				break;
+
+			case $this->is_fx_ops_manager:
+				$transactions = Transaction::pendingApproval()->recent()->limit(5)->get();
+				$transactions->loadMissing('events:id,done_by,transaction_id', 'client:id,full_name,occupation', 'events.doneBy:id,name,email', 'account:id,number');
+				break;
+
+			case $this->is_treasury_ops:
+				$transactions = Transaction::pendingFulfilment()->recent()->limit(5)->get();
+				$transactions->loadMissing('events:id,done_by,transaction_id', 'client:id,full_name,occupation', 'events.doneBy:id,name,email', 'account:id,number');
+				break;
+
+			case $this->is_systems_admin:
+				$transactions = Transaction::recent()->limit(5)->get();
+				$transactions->loadMissing('events:id,done_by,transaction_id', 'client:id,full_name,occupation', 'events.doneBy:id,name,email', 'account:id,number');
+				break;
+
+			default:
+				return response()->error('You don\'t have the required permission', 403);
+		}
+
+		return response()->success(compact('transactions'));
+
+	}
+
+
 	/**
 	 * Store a newly created resource in storage.
 	 *
