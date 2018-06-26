@@ -137,7 +137,7 @@ class JwtAuthenticateController extends Controller
 		$validator = Validator::make($req->all(), [
 			'full_name' => 'required',
 			'email' => 'required|unique:users|email',
-			'phone' => 'required|unique:users|phone',
+			'phone' => 'required|unique:clients',
 			'password' => 'required|string|confirmed|min:6',
 			'password_confirmation' => 'same:password',
 			'is_cooperate' => 'boolean',
