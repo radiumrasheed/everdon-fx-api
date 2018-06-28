@@ -18,7 +18,9 @@ class DashboardController extends Controller
 	{
 		switch (true) {
 			case $this->is_client:
-				$transactions = Auth::user()->client->transactions->count();
+				$transactions = Auth::user()->client->transactions()->count();
+				$open_transactions = Auth::user()->client->transactions()->open()->count();
+				$closed_transactions = Auth::user()->client->transactions()->closed()->count();
 				$accounts = Auth::user()->client->accounts->count();
 				break;
 
@@ -35,7 +37,7 @@ class DashboardController extends Controller
 				$transactions = 0;
 		}
 
-		return response()->success(compact('transactions', 'accounts', 'open', 'in_progress', 'pending_approval', 'pending_fulfilment', 'closed'));
+		return response()->success(compact('transactions', 'open_transactions', 'closed_transactions', 'accounts', 'open', 'in_progress', 'pending_approval', 'pending_fulfilment', 'closed'));
 	}
 
 	/**

@@ -179,7 +179,7 @@ class ClientController extends Controller
 		try {
 			$client = Client::where('id', $client_id)->firstOrFail();
 		} catch (ModelNotFoundException $e) {
-			return response()->error('Client Profile does not exist');
+			return response()->error('Customer\'s Profile does not exist', 404);
 		}
 
 		// Validate the request...

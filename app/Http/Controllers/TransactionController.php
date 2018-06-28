@@ -168,19 +168,19 @@ class TransactionController extends Controller
 				break;
 
 			case $this->is_fx_ops:
-				$transactions = Transaction::where('transaction_status_id', 1)->orWhere('transaction_status_id', 2)->orderBy('updated_at', 'desc')->get();
+				$transactions = Transaction::orderBy('updated_at', 'desc')->get();
 				break;
 
 			case $this->is_fx_ops_lead:
-				$transactions = Transaction::where('transaction_status_id', 2)->orderBy('updated_at', 'desc')->get();
+				$transactions = Transaction::orderBy('updated_at', 'desc')->get();
 				break;
 
 			case $this->is_fx_ops_manager:
-				$transactions = Transaction::where('transaction_status_id', 3)->orderBy('updated_at', 'desc')->get();
+				$transactions = Transaction::orderBy('updated_at', 'desc')->get();
 				break;
 
 			case $this->is_treasury_ops:
-				$transactions = Transaction::where('transaction_status_id', 4)->orderBy('updated_at', 'desc')->get();
+				$transactions = Transaction::orderBy('updated_at', 'desc')->get();
 				break;
 
 			case $this->is_systems_admin:
@@ -721,8 +721,6 @@ class TransactionController extends Controller
 
 		// Update transaction for FULFILMENT...
 		$transaction->transaction_status_id = $transaction_next_status;
-		$transaction->cancelled_by = Auth::user()->id;
-		$transaction->cancelled_at = Carbon::now();
 		$transaction->update();
 
 		// trail Event
@@ -830,32 +828,32 @@ class TransactionController extends Controller
 				$transactions = $client->transactions()
 					->select(['id', 'amount', 'transaction_status_id', 'buying_product_id', 'selling_product_id', 'client_id', 'account_id', 'updated_at'])
 					->orderBy('updated_at', 'desc')
-					->limit(3)->get();
+					->limit(6)->get();
 				$transactions->loadMissing('events:id,done_by,transaction_id', 'events.doneBy:id,name,email', 'account:id,number');
 				break;
 
 			case $this->is_fx_ops:
-				$transactions = Transaction::openOrInProgress()->recent()->limit(5)->get();
+				$transactions = Transaction::recent()->limit(10)->get();
 				$transactions->loadMissing('events:id,done_by,transaction_id', 'client:id,full_name,occupation', 'events.doneBy:id,name,email', 'account:id,number');
 				break;
 
 			case $this->is_fx_ops_lead:
-				$transactions = Transaction::pendingApproval()->recent()->limit(5)->get();
+				$transactions = Transaction::recent()->limit(10)->get();
 				$transactions->loadMissing('events:id,done_by,transaction_id', 'client:id,full_name,occupation', 'events.doneBy:id,name,email', 'account:id,number');
 				break;
 
 			case $this->is_fx_ops_manager:
-				$transactions = Transaction::pendingApproval()->recent()->limit(5)->get();
+				$transactions = Transaction::recent()->limit(10)->get();
 				$transactions->loadMissing('events:id,done_by,transaction_id', 'client:id,full_name,occupation', 'events.doneBy:id,name,email', 'account:id,number');
 				break;
 
 			case $this->is_treasury_ops:
-				$transactions = Transaction::pendingFulfilment()->recent()->limit(5)->get();
+				$transactions = Transaction::recent()->limit(10)->get();
 				$transactions->loadMissing('events:id,done_by,transaction_id', 'client:id,full_name,occupation', 'events.doneBy:id,name,email', 'account:id,number');
 				break;
 
 			case $this->is_systems_admin:
-				$transactions = Transaction::recent()->limit(5)->get();
+				$transactions = Transaction::recent()->limit(10)->get();
 				$transactions->loadMissing('events:id,done_by,transaction_id', 'client:id,full_name,occupation', 'events.doneBy:id,name,email', 'account:id,number');
 				break;
 
