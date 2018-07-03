@@ -62,7 +62,7 @@ class ClientController extends Controller
 		$validator = Validator::make($req->all(), [
 			'email' => 'required|unique:clients|email',
 			'full_name' => 'required',
-			'phone' => 'required',
+			'phone' => 'required|unique:clients'
 		]);
 
 		if ($validator->fails()) {
@@ -111,9 +111,9 @@ class ClientController extends Controller
 		// Validate the request...
 		$validator = Validator::make($req->all(), [
 			'email' => 'required|unique:clients|email',
+			'phone' => 'required|unique:clients',
+			'rc_number' => 'required|unique',
 			'full_name' => 'required',
-			'phone' => 'required',
-			'rc_number' => 'required',
 		]);
 
 		if ($validator->fails()) {

@@ -23,7 +23,7 @@ class Test extends Seeder
 			['role' => 'fx-ops', 'name' => 'Amanda', 'email' => 'amanda.omogiafo@everdonbdc.com', 'password' => Hash::make('12345')],
 			['role' => 'treasury-ops', 'name' => 'Chika', 'email' => 'chika.ohakawa@everdonbdc.com', 'password' => Hash::make('12345')],
 			['role' => 'fx-ops-manager', 'name' => 'Damola', 'email' => 'damola@everdon-fx.com', 'password' => Hash::make('12345')],
-			['role' => 'fx-ops-manager', 'name' => 'Tessy', 'email' => 'tessy@everdonbdc.com', 'password' => Hash::make('12345')],
+			['role' => 'fx-ops-lead', 'name' => 'Tessy', 'email' => 'tessy@everdonbdc.com', 'password' => Hash::make('12345')],
 			['role' => 'fx-ops-manager', 'name' => 'Adeola', 'email' => 'adeola@everdonbdc.com', 'password' => Hash::make('12345')],
 			['role' => 'fx-ops', 'name' => 'Estee', 'email' => 'estee@everdonbdc.com', 'password' => Hash::make('12345')],
 			['role' => 'treasury-ops', 'name' => 'Lookman', 'email' => 'lookman@everdonbdc.com', 'password' => Hash::make('12345')],

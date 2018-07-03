@@ -22,7 +22,6 @@ use Illuminate\Support\Facades\Notification;
 use Illuminate\Support\Facades\Auth;
 use Illuminate\Support\Facades\Log;
 use Illuminate\Support\Facades\Validator;
-use SebastianBergmann\Environment\Console;
 
 class TransactionController extends Controller
 {
@@ -34,11 +33,22 @@ class TransactionController extends Controller
 	const CLOSED = 'closed';
 	const RAISED = 'raised';
 
+	const PURCHASE = 1;
+	const SALES = 2;
+	const SWAP = 3;
+	const REFUND = 4;
+	const EXPENSES = 5;
+	const CROSS = 6;
+
+	const OTHER_TRANSACTION_TYPES = [self::REFUND, self::EXPENSES];
+
 	protected $is_fx_ops;
 	protected $is_fx_ops_lead;
 	protected $is_treasury_ops;
 	protected $is_fx_ops_manager;
 	protected $is_systems_admin;
+
+	private $transaction_type;
 
 
 	/**
@@ -73,6 +83,47 @@ class TransactionController extends Controller
 
 				return $next($request);
 			});
+	}
+
+
+	/**
+	 * @param Int $selling
+	 * @param Int $buying
+	 * @param int|null $transaction_type_id
+	 * @return int
+	 */
+	private function getTransactionType(int $selling, int $buying, int $transaction_type_id = null)
+	{
+		if (in_array($transaction_type_id, self::OTHER_TRANSACTION_TYPES)) {
+			return $this->transaction_type = $transaction_type_id;
+		}
+
+		// Determine transaction type...
+		$have_foreign = in_array($selling, [1, 2, 3]);
+		$want_foreign = in_array($buying, [1, 2, 3]);
+		$have_local = in_array($selling, [4]);
+		$want_local = in_array($buying, [4]);
+
+		$same = $buying == $selling;
+
+		switch (true) {
+			case $have_foreign && $want_local:
+				$type = 'purchase';
+				break;
+			case $have_local && $want_foreign:
+				$type = 'sales';
+				break;
+			case $same:
+				$type = 'swap';
+				break;
+			case !$same && $have_foreign && $want_foreign:
+				$type = 'cross';
+				break;
+			default:
+				return response()->error('Unknown Transaction Type');
+		}
+
+		return $this->transaction_type = TransactionType::where('name', $type)->firstOrFail()->id;
 	}
 
 	/**
@@ -232,38 +283,17 @@ class TransactionController extends Controller
 			'bvn' => 'string',
 		]);
 
-		if ($this->is_client) {
-			// Determine transaction type...
-			$have_foreign = in_array($req->selling_product_id, ['1', '2', '3']);
-			$want_foreign = in_array($req->buying_product_id, ['1', '2', '3']);
-			$have_local = in_array($req->selling_product_id, ['4']);
-			$want_local = in_array($req->buying_product_id, ['4']);
-			$same = $req->buying_product_id == $req->selling_product_id;
-			switch (true) {
-				case $have_foreign && $want_local:
-					$type = 'purchase';
-					break;
-				case $have_local && $want_foreign:
-					$type = 'sales';
-					break;
-				case $same:
-					$type = 'swap';
-					break;
-				case !$same && $have_foreign && $want_foreign:
-					$type = 'cross';
-					break;
-				default:
-					return response()->error('Unkwon Transaction Type');
-			}
-			// Determine transaction mode...
-			$mode = 'cash'; // todo - Review*
-			$transaction_type_id = TransactionType::where('name', $type)->firstOrFail()->id;
-			$transaction_mode_id = TransactionMode::where('name', $mode)->firstOrFail()->id;
-			$req->merge(['transaction_type_id' => $transaction_type_id, 'transaction_mode_id' => $transaction_mode_id]);
-		}
-
 		if ($validator->fails()) {
 			return response()->error($validator->errors(), 422);
+		}
+
+		if ($this->is_client) {
+			// Determine transaction mode...
+			$mode = 'cash'; // todo - Review*
+
+			$transaction_type_id = $this->getTransactionType($req->selling_product_id, $req->buying_product_id);
+			$transaction_mode_id = TransactionMode::where('name', $mode)->firstOrFail()->id;
+			$req->merge(['transaction_type_id' => $transaction_type_id, 'transaction_mode_id' => $transaction_mode_id]);
 		}
 
 		$inputs = $req->only(['client_id', 'transaction_type_id', 'transaction_mode_id', 'buying_product_id', 'selling_product_id', 'account_id', 'amount', 'rate']);
@@ -274,10 +304,10 @@ class TransactionController extends Controller
 			// Get Client...
 			if ($this->is_client) {
 				$client = Auth::user()->client;
-			} elseif ($this->is_staff) {
+			} elseif ($this->is_fx_ops) {
 				$client = Client::find($req->client_id);
 			} else {
-				return response()->error('How did you get here!');
+				return response()->error('You are not allowed to perform this operation!', 403);
 			}
 
 			// Get or Create Account...
@@ -307,8 +337,8 @@ class TransactionController extends Controller
 
 		$transaction = new Transaction($inputs);
 
-		// Check if user is a staff
-		if ($this->is_staff) {
+		// Check if user is fx-Ops
+		if ($this->is_fx_ops) {
 			$transaction->initiated_by = Auth::user()->id;
 			$transaction->initiated_at = Carbon::now();
 		}
@@ -318,7 +348,7 @@ class TransactionController extends Controller
 		$transaction->account()->associate($account);
 		$transaction->save();
 
-		if ($this->is_staff) {
+		if ($this->is_fx_ops) {
 			// trail Event...
 			$audit = new TransactionEvent();
 
@@ -368,45 +398,22 @@ class TransactionController extends Controller
 			'bvn' => 'required',
 		]);
 
-		// Determine transaction type...
-		$have_foreign = in_array($req->i_have, ['usd', 'eur', 'gbp']);
-		$want_foreign = in_array($req->i_want, ['usd', 'eur', 'gbp']);
-		$have_local = in_array($req->i_have, ['ngn']);
-		$want_local = in_array($req->i_want, ['ngn']);
-		$same = $req->i_want == $req->i_have;
-		switch (true) {
-			case $have_foreign && $want_local:
-				$type = 'purchase';
-				break;
-			case $have_local && $want_foreign:
-				$type = 'sales';
-				break;
-			case $same:
-				$type = 'swap';
-				break;
-			case !$same && $have_foreign && $want_foreign:
-				$type = 'cross';
-				break;
-			default:
-				return response()->error('Unknown Transaction Type');
+		// todo validate account_id belongs to client_id...
+		if ($validator->fails()) {
+			return response()->error($validator->errors(), 422);
 		}
 
 		// Determine transaction mode...
 		$mode = 'cash'; // todo - Review*
 
 
-		// todo validate account_id belongs to client_id...
-		if ($validator->fails()) {
-			return response()->error($validator->errors(), 422);
-		}
-
 		// Get Transaction type, mode and product...
 		try {
 			$open = TransactionStatus::where('name', 'open')->firstOrFail()->id;
-			$transaction_type_id = TransactionType::where('name', $type)->firstOrFail()->id;
+			$transaction_type_id = $this->getTransactionType($req->i_have, $req->i_want);
 			$transaction_mode_id = TransactionMode::where('name', $mode)->firstOrFail()->id;
-			$buying_product_id = Product::where('name', $req->i_want)->firstOrFail()->id;
-			$selling_product_id = Product::where('name', $req->i_have)->firstOrFail()->id;
+			$buying_product_id = Product::findOrFail($req->i_want)->id;
+			$selling_product_id = Product::findOrFail($req->i_have)->id;
 		} catch (ModelNotFoundException $e) {
 			return response()->error('An Error Occured: ' . $e->getMessage());
 		}
@@ -459,7 +466,7 @@ class TransactionController extends Controller
 	public function treatTransaction(Request $req, $transaction_id)
 	{
 		// check role...
-		if (!$this->is_fx_ops) {
+		if (!$this->is_fx_ops_lead) {
 			return response()->error('You don\'t have the permission to perform the requested action!');
 		}
 
@@ -543,7 +550,7 @@ class TransactionController extends Controller
 	public function approveTransaction(Request $request, $transaction_id)
 	{
 		// check role...
-		if (!($this->is_fx_ops_lead || $this->is_fx_ops_manager)) {
+		if (!$this->is_fx_ops_manager) {
 			return response()->error('You don\'t have the permission to perform the requested action!');
 		}
 
