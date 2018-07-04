@@ -27,7 +27,7 @@ class Client extends Model
 		'avatar',
 		'identification',
 		'identification_number',
-		'identification_image',
+		'identification_document',
 		'client_type',
 		'marital_status',
 		'residential_address',
@@ -69,7 +69,7 @@ class Client extends Model
 	/**
 	 * Get the KYC details of the client
 	 * */
-	public function client_kyc()
+	public function kyc()
 	{
 		return $this->hasOne('App\ClientKYC', 'client_id');
 	}

@@ -20,7 +20,6 @@ class CreateAccountsTable extends Migration
 			$table->string('number')->unique();
 			$table->string('name');
 			$table->string('bank');
-			$table->string('bvn')->nullable();
 			$table->timestamps();
 		});
 	}

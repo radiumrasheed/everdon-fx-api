@@ -27,10 +27,11 @@ class CreateClientsTable extends Migration
 
 			$table->string('identification')->nullable();
 			$table->string('identification_number')->nullable();
-			$table->string('identification_image')->nullable();
+			$table->string('identification_document')->nullable();
 			$table->string('avatar')->nullable();
 
 			$table->string('rc_number')->nullable();
+			$table->string('cac_document')->nullable();
 
 			$table->string('marital_status')->nullable();
 			$table->string('residential_address')->nullable();

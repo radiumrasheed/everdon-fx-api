@@ -17,6 +17,8 @@ class CreateTransactionsTable extends Migration
 			$table->uuid('id');
 			$table->primary('id');
 			$table->string('transaction_ref')->unique();
+			$table->string('description')->nullable();
+			$table->string('purpose')->nullable();
 
 			$table->bigInteger('transaction_type_id');
 			$table->bigInteger('transaction_mode_id');
@@ -32,8 +34,23 @@ class CreateTransactionsTable extends Migration
 			$table->decimal('rate', 13, 4)->nullable();
 			$table->decimal('calculated_amount', 13, 4)->nullable();
 
+			$table->decimal('wacc', 13, 4)->nullable();
+			$table->decimal('inventory', 13, 4)->nullable();
+			$table->decimal('local_inventory', 13, 4)->nullable();
+
 			$table->string('country')->nullable();
 			$table->string('condition')->nullable();
+			$table->string('destination')->nullable();
+
+			$table->string('swift_code')->nullable();
+			$table->string('routing_no')->nullable();
+			$table->string('sort_code')->nullable();
+			$table->string('iban')->nullable();
+
+			$table->string('documents')->nullable();
+
+			$table->boolean('kyc_check')->nullable();
+			$table->boolean('aml_check')->nullable();
 
 			$table->bigInteger('initiated_by')->nullable();
 			$table->bigInteger('reviewed_by')->nullable();

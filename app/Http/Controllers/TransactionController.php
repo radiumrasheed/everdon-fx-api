@@ -320,7 +320,7 @@ class TransactionController extends Controller
 				}*/
 
 				$account = Account::firstOrCreate(['number' => $req->account_number], ['number' => $req->account_number, 'name' => $req->account_name, 'bank' =>
-					$req->bank_name, 'bvn' => $req->bvn, 'client_id' => $client->id]);
+					$req->bank_name, 'client_id' => $client->id]);
 
 				// make sure account doesn't belong to a different client...
 				if ($account->client_id !== $client->id) {
@@ -433,7 +433,7 @@ class TransactionController extends Controller
 
 		// Get or Create Account...
 		$account = Account::firstOrCreate(['number' => $req->account_number], ['client_id' => $client->id, 'number' => $req->account_number, 'name' => $req->account_name, 'bank' =>
-			$req->bank_name, 'bvn' => $req->bvn]);
+			$req->bank_name]);
 
 		// Save transaction
 		$transaction = new Transaction($inputs);

@@ -2,6 +2,9 @@
 
 namespace App\Providers;
 
+use App\Client;
+use App\ClientKYC;
+use Illuminate\Support\Facades\Log;
 use Illuminate\Support\Facades\Schema;
 use Illuminate\Support\ServiceProvider;
 
@@ -16,6 +19,10 @@ class AppServiceProvider extends ServiceProvider
 	{
 		//
 		Schema::defaultStringLength(191);
+
+		Client::created(function ($client) {
+			$client->kyc()->save(new ClientKYC());
+		});
 	}
 
 	/**

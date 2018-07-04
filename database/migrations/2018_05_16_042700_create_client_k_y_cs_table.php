@@ -16,12 +16,14 @@ class CreateClientKYCsTable extends Migration
 		Schema::create('client_kyc', function (Blueprint $table) {
 			$table->increments('id');
 			$table->bigInteger('client_id');
-			$table->boolean('status');
 
-			$table->bigInteger('last_reviewed_by');
-			$table->dateTime('last_reviewed_at');
+			$table->boolean('status')->default(0);
+			$table->boolean('awaiting_review')->default(0);
 
-			$table->dateTime('expiry');
+			$table->bigInteger('last_reviewed_by')->nullable();
+			$table->dateTime('last_reviewed_at')->nullable();
+
+			$table->dateTime('expiry')->nullable();
 
 			$table->timestamps();
 		});

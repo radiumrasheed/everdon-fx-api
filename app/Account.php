@@ -10,7 +10,7 @@ class Account extends Model
 	protected $table = 'accounts';
 
 
-	protected $fillable = ['number', 'bvn', 'bank', 'name', 'client_id'];
+	protected $fillable = ['number', 'bank', 'name', 'client_id'];
 
 
 	public function client()

@@ -41,9 +41,9 @@ class ClientController extends Controller
 	public function index()
 	{
 		if ($this->is_client) {
-			$client = Client::with('accounts', 'client_kyc')->findOrFail(Auth::user()->client->id);
+			$client = Client::with('accounts', 'kyc')->findOrFail(Auth::user()->client->id);
 		} elseif ($this->is_staff) {
-			$clients = Client::with('client_kyc', 'accounts')->get();
+			$clients = Client::with('kyc', 'accounts')->get();
 		}
 
 		return response()->success(compact('clients', 'client'));
@@ -139,7 +139,7 @@ class ClientController extends Controller
 	 */
 	public function show($client)
 	{
-		$client = Client::with('accounts', 'client_kyc')->findOrFail($client);
+		$client = Client::with('accounts', 'kyc')->findOrFail($client);
 
 //		$client = Client::find($client);
 
@@ -187,7 +187,7 @@ class ClientController extends Controller
 //			'email' => 'required|exists:clients|email',
 			'full_name' => 'required',
 			'phone' => 'required',
-//			'identification_image' => 'mimes:jpeg,bmp,jpg,png|between:1, 6000',
+//			'identification_document' => 'mimes:jpeg,bmp,jpg,png|between:1, 6000',
 		]);
 
 		if ($validator->fails()) {
@@ -208,11 +208,19 @@ class ClientController extends Controller
 
 		// Update Profile...
 		try {
-			$client->update($inputs);
-			if ($req->hasFile('identification_image')) {
-				Storage::delete($client->identification_image);
-				$client->identification_image = $req->identification_image->store('identification_files');
+			// Set for review after update by client...
+			if ($this->is_client) {
+				$client->kyc->awaiting_review = 1;
+				$client->kyc->save();
 			}
+
+
+			$client->update($inputs);
+			if ($req->hasFile('identification_document')) {
+				Storage::delete($client->identification_document);
+				$client->identification_document = $req->identification_document->store('identification_files');
+			}
+
 			$client->save();
 		} catch (\Exception $e) {
 			return response()->error('Profile Update failed: ' . $e->getMessage());
