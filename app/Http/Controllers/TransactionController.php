@@ -275,12 +275,17 @@ class TransactionController extends Controller
 			'buying_product_id' => 'required|exists:products,id',
 			'selling_product_id' => 'required|exists:products,id',
 			'amount' => 'required|numeric',
+			'country' => 'required|string',
 			'account_id' => 'exists:accounts,id',
 			'rate' => 'numeric',
 			'account_number' => 'string',
 			'account_name' => 'string',
 			'bank_name' => 'string',
-			'bvn' => 'string',
+			'sort_code' => 'string',
+			'swift_code' => 'string',
+			'routing_no' => 'string',
+			'iban' => 'string',
+//			'bvn' => 'string',
 		]);
 
 		if ($validator->fails()) {
@@ -288,15 +293,13 @@ class TransactionController extends Controller
 		}
 
 		if ($this->is_client) {
-			// Determine transaction mode...
-			$mode = 'cash'; // todo - Review*
-
 			$transaction_type_id = $this->getTransactionType($req->selling_product_id, $req->buying_product_id);
-			$transaction_mode_id = TransactionMode::where('name', $mode)->firstOrFail()->id;
+			$transaction_mode_id = $req->transaction_mode_id;
 			$req->merge(['transaction_type_id' => $transaction_type_id, 'transaction_mode_id' => $transaction_mode_id]);
 		}
 
-		$inputs = $req->only(['client_id', 'transaction_type_id', 'transaction_mode_id', 'buying_product_id', 'selling_product_id', 'account_id', 'amount', 'rate']);
+		$inputs = $req->only(['client_id', 'transaction_type_id', 'transaction_mode_id', 'buying_product_id', 'selling_product_id', 'account_id', 'amount', 'rate',
+			'sort_code', 'swift_code', 'routing_no', 'iban', 'country']);
 		$transaction_status_id = TransactionStatus::where('name', 'open')->first()->id;
 
 
@@ -305,7 +308,7 @@ class TransactionController extends Controller
 			if ($this->is_client) {
 				$client = Auth::user()->client;
 			} elseif ($this->is_fx_ops) {
-				$client = Client::find($req->client_id);
+				$client = Client::findOrFail($req->client_id);
 			} else {
 				return response()->error('You are not allowed to perform this operation!', 403);
 			}
@@ -324,7 +327,7 @@ class TransactionController extends Controller
 
 				// make sure account doesn't belong to a different client...
 				if ($account->client_id !== $client->id) {
-					return response()->error('account details provided belongs to a different customer');
+					return response()->error('Account details provided belongs to a different customer');
 				}
 
 				// HACK >>>> get account again so it comes with id...
