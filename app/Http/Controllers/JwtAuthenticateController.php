@@ -182,7 +182,11 @@ class JwtAuthenticateController extends Controller
 		}
 		$token = JWTAuth::fromUser($user);
 
-		return response()->success(compact('client', 'user', 'token'));
+		// Add user role to a seperate token...
+		$credentials = $req->only('email', 'password');
+		$_token = JWTAuth::attempt($credentials, ['roles' => 'client']);
+
+		return response()->success(compact('client', 'user', 'token', '_token'));
 	}
 
 
