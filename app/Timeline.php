@@ -8,5 +8,5 @@ class Timeline extends Model
 {
 	protected $table = 'timeline';
 
-	protected $fillable = ['value'];
+	protected $fillable = ['value', 'rate'];
 }

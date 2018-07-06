@@ -36,6 +36,12 @@ class Transaction extends Model
 		'rate'
 	];
 
+	protected $hidden = [
+		'wacc',
+		'inventory',
+		'local_inventory',
+	];
+
 	/**
 	 * Generate a unique transaction reference
 	 *

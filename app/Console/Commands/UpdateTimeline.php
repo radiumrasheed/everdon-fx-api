@@ -50,7 +50,7 @@ class UpdateTimeline extends Command
 		$bar = $this->output->createProgressBar(count($products));
 
 		foreach ($products as $product) {
-			$timeline = new Timeline(['value' => $product->wacc]);
+			$timeline = new Timeline(['value' => $product->wacc, 'rate' => $product->rate]);
 
 			$product->timelines()->save($timeline);
 
@@ -67,7 +67,7 @@ class UpdateTimeline extends Command
 
 		$this->info(PHP_EOL . ' Timeline updated. ' . PHP_EOL);
 
-		event(new NewRates($rates));
+		return event(new NewRates($rates));
 
 	}
 }
