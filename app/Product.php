@@ -14,18 +14,33 @@ class Product extends Model
 		return $this->hasMany('App\Timeline', 'product_id')->select(['product_id', 'value', 'created_at']);
 	}
 
-	public function rates()
+	public function wacc()
 	{
 		return $this->hasMany('App\Timeline', 'product_id')->select(['value as y', 'created_at as x']);
 	}
 
+	public function rate()
+	{
+		return $this->hasMany('App\Timeline', 'product_id')->select(['rate as y', 'created_at as x']);
+	}
+
+	public function scopeDailyWacc()
+	{
+		return $this->wacc()->latest()->limit(24);
+	}
+
 	public function scopeDailyRates()
 	{
-		return $this->rates()->latest()->limit(24);
+		return $this->rate()->latest()->limit(24);
 	}
 
 	public function scopeLastRate()
 	{
-		return $this->rates()->latest()->limit(1);
+		return $this->rate()->latest()->limit(1);
+	}
+
+	public function scopeLastWacc()
+	{
+		return $this->wacc()->latest()->limit(1);
 	}
 }

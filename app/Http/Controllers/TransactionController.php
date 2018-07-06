@@ -366,7 +366,7 @@ class TransactionController extends Controller
 			$audit->save();
 		}
 
-		$transaction = Transaction::with('client', 'account', 'events')->findOrFail($transaction->id);
+		$transaction = Transaction::with('client', 'client.kyc', 'account', 'events')->findOrFail($transaction->id);
 
 		// Notify all users in the next role...
 		$recipients = User::withRole('fx-ops')->get();
@@ -446,7 +446,7 @@ class TransactionController extends Controller
 		$transaction->transaction_status_id = $open;
 		$transaction->save();
 
-		// $transaction = Transaction::with('client', 'account', 'events')->findOrFail($transaction->id);
+		// $transaction = Transaction::with('client', 'client.kyc', 'account', 'events')->findOrFail($transaction->id);
 
 		// Notify all users in the next role...
 		$recipients = User::withRole('fx-ops')->get();
@@ -531,7 +531,7 @@ class TransactionController extends Controller
 		$audit->done_at = Carbon::now();
 		$audit->save();
 
-		$transaction = Transaction::with('client', 'account', 'events')->findOrFail($transaction->id);
+		$transaction = Transaction::with('client', 'client.kyc', 'account', 'events')->findOrFail($transaction->id);
 
 		// Notify all users in the next role...
 		$recipients = User::withRole('fx-ops-manager', 'fx-ops-lead')->get();
@@ -603,7 +603,7 @@ class TransactionController extends Controller
 		$event->loadMissing('doneBy');
 
 		// Re-Get transaction and all its related properties...
-		$transaction = Transaction::with('client', 'account', 'events', 'events.doneBy')->findOrFail($transaction->id);
+		$transaction = Transaction::with('client', 'client.kyc', 'account', 'events', 'events.doneBy')->findOrFail($transaction->id);
 
 		// Update bucket funds...
 		if ($transaction->transaction_type_id === 1 or $transaction->transaction_type_id === 2) {
@@ -682,7 +682,7 @@ class TransactionController extends Controller
 		$event->save();
 
 		// Re-get transaction and related properties
-		$transaction = Transaction::with('client', 'account', 'events', 'events.doneBy')->findOrFail($transaction->id);
+		$transaction = Transaction::with('client', 'client.kyc', 'account', 'events', 'events.doneBy')->findOrFail($transaction->id);
 
 		// Update WACC...
 		$this->updateWACC($transaction->buying_product_id, $transaction->amount, $transaction->calculated_amount);
@@ -747,7 +747,7 @@ class TransactionController extends Controller
 		$event->done_at = Carbon::now();
 		$event->save();
 
-		$transaction = Transaction::with('client', 'account', 'events', 'events.doneBy')->findOrFail($transaction->id);
+		$transaction = Transaction::with('client', 'client.kyc', 'account', 'events', 'events.doneBy')->findOrFail($transaction->id);
 
 		// Notify only client...
 		Notification::route('mail', $transaction->client->email)->notify(new NotifyClient($transaction, $event));
@@ -809,7 +809,7 @@ class TransactionController extends Controller
 		$event->save();
 
 		// Re-get transaction with all its related properties...
-		$transaction = Transaction::with('client', 'account', 'events', 'events.doneBy')->findOrFail($transaction->id);
+		$transaction = Transaction::with('client', 'client.kyc', 'account', 'events', 'events.doneBy')->findOrFail($transaction->id);
 
 		// Notify all users in the next role...
 		$recipients = User::withRole('fx-ops')->get();
@@ -904,7 +904,7 @@ class TransactionController extends Controller
 		}*/
 
 		try {
-			$transaction = Transaction::with('client', 'account', 'events', 'events.doneBy')->findOrFail($transaction_id);
+			$transaction = Transaction::with('client', 'client.kyc', 'account', 'events', 'events.doneBy')->findOrFail($transaction_id);
 		} catch (ModelNotFoundException $e) {
 			return response()->error('No such Transaction exists');
 		}

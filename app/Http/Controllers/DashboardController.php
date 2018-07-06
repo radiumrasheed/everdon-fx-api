@@ -66,6 +66,21 @@ class DashboardController extends Controller
 			return response()->error('Restricted Access');
 		}
 
+		$usd = Product::findOrFail(1)->dailyWacc()->get();
+		$gbp = Product::findOrFail(2)->dailyWacc()->get();
+		$eur = Product::findOrFail(3)->dailyWacc()->get();
+
+		return response()->success(compact('usd', 'eur', 'gbp'));
+	}
+
+	/**
+	 * Get WACC rate of foreign currencies
+	 *
+	 * @return
+	 */
+	public function rateTimeline()
+	{
+
 		$usd = Product::findOrFail(1)->dailyRates()->get();
 		$gbp = Product::findOrFail(2)->dailyRates()->get();
 		$eur = Product::findOrFail(3)->dailyRates()->get();
