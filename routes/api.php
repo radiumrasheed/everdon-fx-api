@@ -50,6 +50,7 @@ Route::group(['middleware' => ['role:systems-admin|fx-ops|fx-ops-lead|fx-ops-man
 	Route::get('clients/search/{term}', 'ClientController@search');
 	Route::get('clients/{id}', 'ClientController@show');
 	Route::get('clients/{client_id}/accounts', 'ClientController@accounts');
+	Route::post('clients/{client_id}/account', 'ClientController@addAccount');
 	Route::post('clients/{id}/upload', 'ClientController@updateAvatar');
 	Route::post('clients/{id}', 'ClientController@update');
 	Route::get('clients', 'ClientController@index');

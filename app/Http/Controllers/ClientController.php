@@ -2,8 +2,10 @@
 
 namespace App\Http\Controllers;
 
+use App\Account;
 use App\Client;
 use App\ClientType;
+use App\User;
 use Illuminate\Database\Eloquent\ModelNotFoundException;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Auth;
@@ -260,6 +262,47 @@ class ClientController extends Controller
 
 
 		return response()->success(compact('client'));
+
+
+	}
+
+
+	/**
+	 * Add an account to client profile
+	 *
+	 * @param Request $req
+	 * @param $client_id
+	 * @return object
+	 */
+	public function addAccount(Request $req, $client_id)
+	{
+		// Fetch the client...
+		try {
+			$client = Client::where('id', $client_id)->firstOrFail();
+		} catch (ModelNotFoundException $e) {
+			return response()->error('Client Profile does not exist');
+		}
+
+		if ($this->is_client) {
+			if (Auth::user()->client->id !== $client->id) {
+				return response()->error('You\'re not authorised to make this request');
+			}
+		} else if (!$this->is_staff) {
+			return response()->error('Unauthorised Request', 403);
+		}
+
+		$this->validate($req, [
+			'number' => 'required|digits:10|unique:accounts',
+			'name' => 'required|string',
+			'bank' => 'required|string',
+		]);
+
+		$account = new Account(['name' => $req->name, 'number' => $req->number, 'bank' => $req->bank]);
+		$client->accounts()->save($account);
+
+		$accounts = $client->accounts;
+
+		return response()->success(compact('accounts'));
 
 
 	}
