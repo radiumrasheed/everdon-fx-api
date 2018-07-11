@@ -40,6 +40,9 @@ class TransactionController extends Controller
 	const EXPENSES = 5;
 	const CROSS = 6;
 
+	const PASSED = true;
+	const FAILED = false;
+
 	const OTHER_TRANSACTION_TYPES = [self::REFUND, self::EXPENSES];
 
 	protected $is_fx_ops;
@@ -127,14 +130,15 @@ class TransactionController extends Controller
 	}
 
 	/**
-	 * Update buckets using transactions
+	 * Update buckets for Sales and Purchase Transactions
 	 *
 	 * @param Transaction $transaction
-	 * @return bool
+	 * @return bool|string
 	 */
-	private function updateBucket(Transaction $transaction)
+	private function updateBucketForPurchaseOrSale(Transaction $transaction)
 	{
 		DB::beginTransaction();
+
 		try {
 			// Is Purchase or Sales Transaction...
 			$buy = Product::findOrFail($transaction->buying_product_id);
@@ -144,6 +148,9 @@ class TransactionController extends Controller
 			$buy->prev_bucket = $buy->bucket;
 			$buy->prev_bucket_local = $buy->bucket_local;
 			$buy->bucket = $buy->bucket - $transaction->amount;
+			if ($buy->bucket < 0) {
+				throw new \Exception('Not enough funds to approve request!');
+			}
 			$buy->bucket_local = $buy->wacc * $buy->bucket;
 			$buy->save();
 
@@ -154,15 +161,59 @@ class TransactionController extends Controller
 			$sell->save();
 
 			DB::commit();
-			$is_success = true;
+
+			return self::PASSED;
 		} catch (\Exception $e) {
-			$is_success = false;
 			DB::rollback();
-
 			Log::emergency($e->getMessage());
-		}
 
-		return $is_success;
+			return $e->getMessage();
+		}
+	}
+
+	/**
+	 * Update buckets for Cross Transactions
+	 *
+	 * @param Transaction $transaction
+	 * @return bool|string
+	 */
+	private function updateBucketForCross(Transaction $transaction)
+	{
+		DB::beginTransaction();
+
+		try {
+			throw new \Exception('Cross Transactions not yet supported!');
+
+			// Is Purchase or Sales Transaction...
+			$buy = Product::findOrFail($transaction->buying_product_id);
+			$sell = Product::findOrFail($transaction->selling_product_id);
+//			$local = Product::findOrFail($transaction->selling_product_id);
+
+			// Do calculation...
+			$buy->prev_bucket = $buy->bucket;
+			$buy->prev_bucket_local = $buy->bucket_local;
+			$buy->bucket = $buy->bucket - $transaction->amount;
+			if ($buy->bucket < 0) {
+				throw new \Exception('Not enough funds to approve request!');
+			}
+			$buy->bucket_local = $buy->wacc * $buy->bucket;
+			$buy->save();
+
+			$sell->prev_bucket = $sell->bucket;
+			$sell->prev_bucket_local = $sell->bucket_local;
+			$sell->bucket = $sell->bucket + $transaction->calculated_amount;
+			$sell->bucket_local = $sell->wacc * $sell->bucket;
+			$sell->save();
+
+			DB::commit();
+
+			return self::PASSED;
+		} catch (\Exception $e) {
+			DB::rollback();
+			Log::emergency($e->getMessage());
+
+			return $e->getMessage();
+		}
 	}
 
 	/**
@@ -298,7 +349,7 @@ class TransactionController extends Controller
 			$req->merge(['transaction_type_id' => $transaction_type_id, 'transaction_mode_id' => $transaction_mode_id]);
 		}
 
-		$inputs = $req->only(['client_id', 'transaction_type_id', 'transaction_mode_id', 'buying_product_id', 'selling_product_id', 'account_id', 'amount', 'rate',
+		$inputs = $req->only(['client_id', 'transaction_type_id', 'transaction_mode_id', 'buying_product_id', 'selling_product_id', 'amount', 'rate',
 			'sort_code', 'swift_code', 'routing_no', 'iban', 'country']);
 		$transaction_status_id = TransactionStatus::where('name', 'open')->first()->id;
 
@@ -316,7 +367,7 @@ class TransactionController extends Controller
 			// Get or Create Account...
 			if ($req->account_id) {
 				$account = Account::find($req->account_id);
-			} else {
+			} elseif ($req->account_number) {
 				/*$owner_exists = Account::where('number', $r->account_number)->where('client_id', $client->id)->count();
 				if ($owner_exists == 0) {
 					return response()->success(compact('owner_exists'));
@@ -348,7 +399,9 @@ class TransactionController extends Controller
 
 		$transaction->transaction_status_id = $transaction_status_id;
 		$transaction->client()->associate($client);
-		$transaction->account()->associate($account);
+		if (isset($account)) {
+			$transaction->account()->associate($account);
+		}
 		$transaction->save();
 
 		if ($this->is_fx_ops) {
@@ -580,6 +633,23 @@ class TransactionController extends Controller
 			return response()->error($validator->errors(), 422);
 		}
 
+		// try update bucket funds...
+		switch ($transaction->transaction_type_id) {
+			case self::PURCHASE:
+			case self::SALES:
+				if (($message = $this->updateBucketForPurchaseOrSale($transaction)) !== self::PASSED) {
+					return response()->error($message);
+				};
+				break;
+			case self::CROSS:
+				if (($message = $this->updateBucketForCross($transaction)) !== self::PASSED) {
+					return response()->error($message);
+				};
+				break;
+			default:
+				break;
+		}
+
 		// Update transaction for FULFILMENT...
 		$transaction->transaction_status_id = $transaction_next_status;
 		$transaction->approved_by = Auth::user()->id;
@@ -604,11 +674,6 @@ class TransactionController extends Controller
 
 		// Re-Get transaction and all its related properties...
 		$transaction = Transaction::with('client', 'client.kyc', 'account', 'events', 'events.doneBy')->findOrFail($transaction->id);
-
-		// Update bucket funds...
-		if ($transaction->transaction_type_id === 1 or $transaction->transaction_type_id === 2) {
-			$update = $this->updateBucket($transaction);
-		}
 
 		// Notify all users in the next role...
 		$recipients = User::withRole('treasury-ops')->get();

@@ -22,6 +22,7 @@ class Transaction extends Model
 		'buying_product_id',
 		'selling_product_id',
 		'amount',
+		'country',
 		'condition',
 		'swift_code',
 		'routing_no',

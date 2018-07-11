@@ -92,7 +92,7 @@ class PasswordController extends Controller
 
 		$this->sendPasswordLink($reset, $reset->email, $token);
 
-		return response()->success('mail sent');
+		return response()->success('Mail has been sent to your email address');
 
 	}
 
