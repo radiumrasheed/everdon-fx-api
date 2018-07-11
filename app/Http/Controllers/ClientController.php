@@ -16,6 +16,13 @@ use JD\Cloudder\Facades\Cloudder;
 class ClientController extends Controller
 {
 
+	const INDIVIDUAL = 1;
+	const COOPERATE = 2;
+	const EXPRESS = 3;
+	const PROXY_INDIVIDUAL = 4;
+	const PROXY_COOPERATE = 5;
+
+
 	/**
 	 * Get a clients' accounts
 	 *
@@ -66,39 +73,29 @@ class ClientController extends Controller
 			'full_name' => 'required',
 			'phone' => 'required|unique:clients'
 		]);
-
 		if ($validator->fails()) {
 			return response()->error($validator->errors(), 422);
 		}
+
+		// Determine Client Type...
+		if ($this->is_staff) {
+			$client_type_id = ClientType::where('name', 'proxy_individual')->first()->id;
+		} elseif ($this->is_client) {
+			$client_type_id = ClientType::where('name', 'individual')->first()->id;
+		} else {
+			return response()->error('You are not eligible to make this request');
+		}
+
 
 		$_client = $req->only([
 			'full_name', 'email', 'phone', 'bvn', 'office_address', 'marital_status', 'date_of_birth', 'residential_address', 'occupation',
 			'nok_full_name', 'nok_phone', 'referee'
 		]);
-		/*$_account = $req->only([
-			'account_name', 'account_number', 'bvn', 'bank_name', 'client_id'
-		]);*/
-		$client_type_id = ClientType::where('name', 'individual')->first()->id;
-
 
 		// create client
 		$client = new Client($_client);
 		$client->client_type = $client_type_id;
 		$client->save();
-
-		/*$_account = [
-			'name' => $req->account_name,
-			'number' => $req->account_number,
-			'bvn',
-			'bank' => $req->bank_name,
-			'client_id' => $client->id
-		];*/
-
-		// create account
-//		$account = Account::firstOrCreate(['number' => $req->account_number], $_account);
-
-		// attach account to client
-//		$client->accounts()->save($account);
 
 		return response()->success(compact('client'));
 	}
@@ -117,13 +114,20 @@ class ClientController extends Controller
 			'rc_number' => 'required|unique',
 			'full_name' => 'required',
 		]);
-
 		if ($validator->fails()) {
 			return response()->error($validator->errors(), 422);
 		}
 
+		// Determine Client Type...
+		if ($this->is_staff) {
+			$client_type_id = ClientType::where('name', 'proxy_cooperate')->first()->id;
+		} elseif ($this->is_client) {
+			$client_type_id = ClientType::where('name', 'cooperate')->first()->id;
+		} else {
+			return response()->error('You are not eligible to make this request');
+		}
+
 		$inputs = $req->only(['full_name', 'email', 'phone', 'bvn', 'office_address', 'rc_number']);
-		$client_type_id = ClientType::where('name', 'cooperate')->first()->id;
 
 		$client = new Client($inputs);
 		$client->client_type = $client_type_id;
@@ -196,16 +200,35 @@ class ClientController extends Controller
 			return response()->error($validator->errors(), 422);
 		}
 
-		// Get inputs based on client type...
-		if ($client->client_type === 1 && $this->is_staff) {
-			$inputs = $req->only(['full_name', 'phone', 'bvn', 'office_address', 'marital_status', 'identification', 'identification_number',
-				'residential_address', 'occupation', 'nok_full_name', 'nok_phone', 'referee_1', 'referee_2', 'referee_3', 'referee_4', 'date_of_birth',
-			]);
-		} elseif ($client->client_type === 1 && $this->is_client) {
-			$inputs = $req->only(['full_name', 'phone', 'bvn', 'office_address', 'marital_status', 'identification', 'identification_number',
-				'residential_address', 'occupation', 'nok_full_name', 'nok_phone', 'date_of_birth']);
-		} elseif ($client->client_type === 2) {
-			$inputs = $req->only(['full_name', 'phone', 'bvn', 'office_address', 'rc_number']);
+		// Get inputs based on client type & user...
+		switch (true) {
+			case in_array($client->client_type, [self::INDIVIDUAL, self::PROXY_INDIVIDUAL]) && $this->is_staff:
+				$inputs = $req->only(['full_name', 'phone', 'bvn', 'office_address', 'marital_status', 'identification', 'identification_number',
+					'residential_address', 'occupation', 'nok_full_name', 'nok_phone', 'referee_1', 'referee_2', 'referee_3', 'referee_4', 'date_of_birth',
+				]);
+				break;
+
+			case in_array($client->client_type, [self::INDIVIDUAL, self::PROXY_INDIVIDUAL]) && $this->is_client:
+				$inputs = $req->only(['full_name', 'phone', 'bvn', 'office_address', 'marital_status', 'identification', 'identification_number',
+					'residential_address', 'occupation', 'nok_full_name', 'nok_phone', 'date_of_birth']);
+				break;
+
+			case in_array($client->client_type, [self::COOPERATE, self::PROXY_COOPERATE]) && $this->is_client:
+				$inputs = $req->only(['full_name', 'phone', 'bvn', 'office_address', 'rc_number']);
+				break;
+
+			case in_array($client->client_type, [self::COOPERATE, self::PROXY_COOPERATE]) && $this->is_staff:
+				$inputs = $req->only(['full_name', 'phone', 'bvn', 'office_address', 'rc_number', 'referee_1', 'referee_2', 'referee_3', 'referee_4']);
+				break;
+
+			case in_array($client->client_type, [self::EXPRESS]):
+				$inputs = $req->only(['full_name', 'phone', 'bvn', 'office_address', 'marital_status', 'identification', 'identification_number',
+					'residential_address', 'occupation', 'nok_full_name', 'nok_phone', 'referee_1', 'referee_2', 'referee_3', 'referee_4', 'date_of_birth',
+				]);
+				break;
+
+			default:
+				return response()->error('You are not eligible to make this action');
 		}
 
 		// Update Profile...

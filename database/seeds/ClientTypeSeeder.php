@@ -23,7 +23,9 @@ class ClientTypeSeeder extends Seeder
 		$datas = array(
 			['name' => 'individual', 'description' => 'Individual'],
 			['name' => 'cooperate', 'description' => 'Cooperate'],
-			['name' => 'express', 'description' => 'Express Client'],
+			['name' => 'express', 'description' => 'Express Client created during an express transaction'],
+			['name' => 'proxy_individual', 'description' => 'Individual User created by a staff'],
+			['name' => 'proxy_cooperate', 'description' => 'Cooperate User created by a staff'],
 		);
 
 		// Loop through each data above and create the record for them in the database
