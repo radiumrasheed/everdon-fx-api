@@ -23,15 +23,23 @@ class UserSeeder extends Seeder
 		DB::table('users')->delete();
 
 		$users = array(
-			['name' => 'Developer', 'email' => 'dev@everdon-fx.com', 'password' => Hash::make('dev')],
+			['first_name' => 'Web', 'last_name' => 'Developer', 'email' => 'dev@everdon-fx.com', 'password' => Hash::make('dev')],
 		);
 
 		$role = Role::where('name', 'systems-admin')->first();
 
 		// Loop through each user above and create the record for them in the database
 		foreach ($users as $user) {
-			$staff = Staff::create(['full_name' => $user['name'], 'email' => $user['email']]);
-			$_user = User::create($user);
+			$staff = Staff::create([
+				'first_name' => $user['first_name'],
+				'last_name' => $user['last_name'],
+				'email' => $user['email']
+			]);
+			$_user = User::create([
+				'name' => $user['first_name'] . $user['last_name'],
+				'email' => $user['email'],
+				'password' => $user['password'],
+			]);
 
 			$_user->staff()->save($staff);
 			$_user->roles()->attach($role->id);

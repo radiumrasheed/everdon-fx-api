@@ -135,7 +135,8 @@ class JwtAuthenticateController extends Controller
 	{
 		// Validate the request...
 		$validator = Validator::make($req->all(), [
-			'full_name' => 'required',
+			'first_name' => 'required',
+			'last_name' => 'required',
 			'email' => 'required|unique:users|email',
 			'phone' => 'required|unique:clients',
 			'password' => 'required|string|confirmed|min:6',
@@ -152,17 +153,17 @@ class JwtAuthenticateController extends Controller
 			$_client_type_id = ClientType::where('name', 'cooperate')->first()->id;
 			$req->merge(['client_type' => $_client_type_id]);
 			$_client = $req->only([
-				'full_name', 'email', 'phone', 'bvn', 'office_address', 'rc_number', 'client_type'
+				'first_name', 'last_name', 'middle_name', 'email', 'phone', 'bvn', 'office_address', 'rc_number', 'client_type'
 			]);
 		} else {
 			$_client_type_id = ClientType::where('name', 'individual')->first()->id;
 			$req->merge(['client_type' => $_client_type_id]);
 			$_client = $req->only([
-				'full_name', 'email', 'phone', 'bvn', 'office_address', 'marital_status', 'date_of_birth', 'residential_address', 'occupation',
+				'first_name', 'last_name', 'middle_name', 'email', 'phone', 'bvn', 'office_address', 'marital_status', 'date_of_birth', 'residential_address', 'occupation',
 				'nok_full_name', 'nok_phone', 'referee', 'client_type'
 			]);
 		}
-		$_user = ['name' => $req->full_name, 'email' => $req->email, 'password' => Hash::make($req->password)];
+		$_user = ['name' => $req->first_name . $req->last_name, 'email' => $req->email, 'password' => Hash::make($req->password)];
 
 		// Create User & Client account...
 		try {

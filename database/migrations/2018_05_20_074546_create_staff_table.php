@@ -16,7 +16,9 @@ class CreateStaffTable extends Migration
 		Schema::create('staffs', function (Blueprint $table) {
 			$table->increments('id');
 			$table->bigInteger('user_id')->nullable();
-			$table->string('full_name')->nullable();
+			$table->string('first_name')->nullable();
+			$table->string('middle_name')->nullable();
+			$table->string('last_name')->nullable();
 			$table->string('email')->nullable();
 			$table->string('phone')->nullable();
 			$table->timestamps();

@@ -294,7 +294,7 @@ class TransactionController extends Controller
 		}
 
 		// Load missing client data along with transaction
-		$transactions->loadMissing('client:id,full_name,occupation');
+		$transactions->loadMissing('client:id,first_name,last_name,middle_name,occupation');
 
 		return response()->success(compact('transactions'));
 	}
@@ -442,7 +442,8 @@ class TransactionController extends Controller
 	{
 		// Validate the request...
 		$validator = Validator::make($req->all(), [
-			'full_name' => 'required',
+			'first_name' => 'required',
+			'last_name' => 'required',
 			'email' => 'required',
 			'phone' => 'required',
 			'amount' => 'required|numeric',
@@ -485,7 +486,7 @@ class TransactionController extends Controller
 		$inputs = $req->only(['client_id', 'transaction_type_id', 'transaction_mode_id', 'buying_product_id', 'selling_product_id', 'account_id', 'amount']);
 
 		// Get or Create Client...
-		$client = Client::firstOrCreate($req->only('email'), $req->only(['email', 'full_name', 'phone', 'client_type']));
+		$client = Client::firstOrCreate($req->only('email'), $req->only(['email', 'first_name', 'middle_name', 'last_name', 'phone', 'client_type']));
 
 		// Get or Create Account...
 		$account = Account::firstOrCreate(['number' => $req->account_number], ['client_id' => $client->id, 'number' => $req->account_number, 'name' => $req->account_name, 'bank' =>
@@ -909,27 +910,27 @@ class TransactionController extends Controller
 
 			case $this->is_fx_ops:
 				$transactions = Transaction::recent()->limit(10)->get();
-				$transactions->loadMissing('events:id,done_by,transaction_id', 'client:id,full_name,occupation', 'events.doneBy:id,name,email', 'account:id,number');
+				$transactions->loadMissing('events:id,done_by,transaction_id', 'client:id,first_name,middle_name,last_name,occupation', 'events.doneBy:id,name,email', 'account:id,number');
 				break;
 
 			case $this->is_fx_ops_lead:
 				$transactions = Transaction::recent()->limit(10)->get();
-				$transactions->loadMissing('events:id,done_by,transaction_id', 'client:id,full_name,occupation', 'events.doneBy:id,name,email', 'account:id,number');
+				$transactions->loadMissing('events:id,done_by,transaction_id', 'client:id,first_name,middle_name,last_name,occupation', 'events.doneBy:id,name,email', 'account:id,number');
 				break;
 
 			case $this->is_fx_ops_manager:
 				$transactions = Transaction::recent()->limit(10)->get();
-				$transactions->loadMissing('events:id,done_by,transaction_id', 'client:id,full_name,occupation', 'events.doneBy:id,name,email', 'account:id,number');
+				$transactions->loadMissing('events:id,done_by,transaction_id', 'client:id,first_name,middle_name,last_name,occupation', 'events.doneBy:id,name,email', 'account:id,number');
 				break;
 
 			case $this->is_treasury_ops:
 				$transactions = Transaction::recent()->limit(10)->get();
-				$transactions->loadMissing('events:id,done_by,transaction_id', 'client:id,full_name,occupation', 'events.doneBy:id,name,email', 'account:id,number');
+				$transactions->loadMissing('events:id,done_by,transaction_id', 'client:id,first_name,middle_name,last_name,occupation', 'events.doneBy:id,name,email', 'account:id,number');
 				break;
 
 			case $this->is_systems_admin:
 				$transactions = Transaction::recent()->limit(10)->get();
-				$transactions->loadMissing('events:id,done_by,transaction_id', 'client:id,full_name,occupation', 'events.doneBy:id,name,email', 'account:id,number');
+				$transactions->loadMissing('events:id,done_by,transaction_id', 'client:id,first_name,middle_name,last_name,occupation', 'events.doneBy:id,name,email', 'account:id,number');
 				break;
 
 			default:

@@ -19,7 +19,9 @@ class CreateClientsTable extends Migration
 			$table->bigInteger('user_id')->nullable();
 			// $table->bigInteger('client_kyc_id');
 
-			$table->string('full_name');
+			$table->string('first_name')->nullable();
+			$table->string('middle_name')->nullable();
+			$table->string('last_name')->nullable();
 			$table->string('email')->unique();
 			$table->string('phone');
 			$table->string('office_address')->nullable();

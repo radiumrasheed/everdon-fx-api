@@ -70,7 +70,8 @@ class ClientController extends Controller
 		// Validate the request...
 		$validator = Validator::make($req->all(), [
 			'email' => 'required|unique:clients|email',
-			'full_name' => 'required',
+			'first_name' => 'required',
+			'last_name' => 'required',
 			'phone' => 'required|unique:clients'
 		]);
 		if ($validator->fails()) {
@@ -88,7 +89,7 @@ class ClientController extends Controller
 
 
 		$_client = $req->only([
-			'full_name', 'email', 'phone', 'bvn', 'office_address', 'marital_status', 'date_of_birth', 'residential_address', 'occupation',
+			'first_name', 'middle_name', 'last_name', 'email', 'phone', 'bvn', 'office_address', 'marital_status', 'date_of_birth', 'residential_address', 'occupation',
 			'nok_full_name', 'nok_phone', 'referee'
 		]);
 
@@ -111,8 +112,9 @@ class ClientController extends Controller
 		$validator = Validator::make($req->all(), [
 			'email' => 'required|unique:clients|email',
 			'phone' => 'required|unique:clients',
-			'rc_number' => 'required|unique',
-			'full_name' => 'required',
+			'rc_number' => 'required|unique:clients',
+			'first_name' => 'required',
+			'last_name' => 'required',
 		]);
 		if ($validator->fails()) {
 			return response()->error($validator->errors(), 422);
@@ -127,7 +129,7 @@ class ClientController extends Controller
 			return response()->error('You are not eligible to make this request');
 		}
 
-		$inputs = $req->only(['full_name', 'email', 'phone', 'bvn', 'office_address', 'rc_number']);
+		$inputs = $req->only(['first_name', 'middle_name', 'last_name', 'email', 'phone', 'bvn', 'office_address', 'rc_number']);
 
 		$client = new Client($inputs);
 		$client->client_type = $client_type_id;
@@ -191,7 +193,8 @@ class ClientController extends Controller
 		// Validate the request...
 		$validator = Validator::make($req->all(), [
 //			'email' => 'required|exists:clients|email',
-			'full_name' => 'required',
+			'first_name' => 'required',
+			'last_name' => 'required',
 			'phone' => 'required',
 //			'identification_document' => 'mimes:jpeg,bmp,jpg,png|between:1, 6000',
 		]);
@@ -203,26 +206,26 @@ class ClientController extends Controller
 		// Get inputs based on client type & user...
 		switch (true) {
 			case in_array($client->client_type, [self::INDIVIDUAL, self::PROXY_INDIVIDUAL]) && $this->is_staff:
-				$inputs = $req->only(['full_name', 'phone', 'bvn', 'office_address', 'marital_status', 'identification', 'identification_number',
+				$inputs = $req->only(['first_name', 'middle_name', 'last_name', 'phone', 'bvn', 'office_address', 'marital_status', 'identification', 'identification_number',
 					'residential_address', 'occupation', 'nok_full_name', 'nok_phone', 'referee_1', 'referee_2', 'referee_3', 'referee_4', 'date_of_birth',
 				]);
 				break;
 
 			case in_array($client->client_type, [self::INDIVIDUAL, self::PROXY_INDIVIDUAL]) && $this->is_client:
-				$inputs = $req->only(['full_name', 'phone', 'bvn', 'office_address', 'marital_status', 'identification', 'identification_number',
+				$inputs = $req->only(['first_name', 'middle_name', 'last_name', 'phone', 'bvn', 'office_address', 'marital_status', 'identification', 'identification_number',
 					'residential_address', 'occupation', 'nok_full_name', 'nok_phone', 'date_of_birth']);
 				break;
 
 			case in_array($client->client_type, [self::COOPERATE, self::PROXY_COOPERATE]) && $this->is_client:
-				$inputs = $req->only(['full_name', 'phone', 'bvn', 'office_address', 'rc_number']);
+				$inputs = $req->only(['first_name', 'middle_name', 'last_name', 'phone', 'bvn', 'office_address', 'rc_number']);
 				break;
 
 			case in_array($client->client_type, [self::COOPERATE, self::PROXY_COOPERATE]) && $this->is_staff:
-				$inputs = $req->only(['full_name', 'phone', 'bvn', 'office_address', 'rc_number', 'referee_1', 'referee_2', 'referee_3', 'referee_4']);
+				$inputs = $req->only(['first_name', 'middle_name', 'last_name', 'phone', 'bvn', 'office_address', 'rc_number', 'referee_1', 'referee_2', 'referee_3', 'referee_4']);
 				break;
 
 			case in_array($client->client_type, [self::EXPRESS]):
-				$inputs = $req->only(['full_name', 'phone', 'bvn', 'office_address', 'marital_status', 'identification', 'identification_number',
+				$inputs = $req->only(['first_name', 'middle_name', 'last_name', 'phone', 'bvn', 'office_address', 'marital_status', 'identification', 'identification_number',
 					'residential_address', 'occupation', 'nok_full_name', 'nok_phone', 'referee_1', 'referee_2', 'referee_3', 'referee_4', 'date_of_birth',
 				]);
 				break;

@@ -19,7 +19,9 @@ class Client extends Model
 	 * @var array
 	 */
 	protected $fillable = [
-		'full_name',
+		'first_name',
+		'last_name',
+		'middle_name',
 		'email',
 		'office_address',
 		'phone',
@@ -83,6 +85,11 @@ class Client extends Model
 	 */
 	public function scopeSearch($query, $term)
 	{
-		return $query->where('full_name', 'like', '%' . $term . '%')->orWhere('email', 'like', '%' . $term . '%')->select(['id', 'full_name', 'email']);
+		return $query
+			->where('first_name', 'like', '%' . $term . '%')
+			->orWhere('last_name', 'like', '%' . $term . '%')
+			->orWhere('middle_name', 'like', '%' . $term . '%')
+			->orWhere('email', 'like', '%' . $term . '%')
+			->select(['id', 'first_name', 'last_name', 'middle_name', 'email']);
 	}
 }
