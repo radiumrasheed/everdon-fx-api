@@ -69,6 +69,11 @@ class Transaction extends Model
 		return $query->where('transaction_status_id', 1);
 	}
 
+	public function scopeInitiatedByStaff($query)
+	{
+		return $query->whereNotNull('initiated_by');
+	}
+
 	public function scopeInProgress($query)
 	{
 		return $query->where('transaction_status_id', 2);

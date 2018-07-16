@@ -270,19 +270,19 @@ class TransactionController extends Controller
 				break;
 
 			case $this->is_fx_ops:
-				$transactions = Transaction::orderBy('updated_at', 'desc')->get();
+				$transactions = Transaction::initiatedByStaff()->orderBy('updated_at', 'desc')->get();
 				break;
 
 			case $this->is_fx_ops_lead:
-				$transactions = Transaction::orderBy('updated_at', 'desc')->get();
+				$transactions = Transaction::openOrInProgress()->orderBy('updated_at', 'desc')->get();
 				break;
 
 			case $this->is_fx_ops_manager:
-				$transactions = Transaction::orderBy('updated_at', 'desc')->get();
+				$transactions = Transaction::pendingApproval()->orderBy('updated_at', 'desc')->get();
 				break;
 
 			case $this->is_treasury_ops:
-				$transactions = Transaction::orderBy('updated_at', 'desc')->get();
+				$transactions = Transaction::pendingFulfilment()->orderBy('updated_at', 'desc')->get();
 				break;
 
 			case $this->is_systems_admin:
@@ -909,27 +909,27 @@ class TransactionController extends Controller
 				break;
 
 			case $this->is_fx_ops:
-				$transactions = Transaction::recent()->limit(10)->get();
+				$transactions = Transaction::initiatedByStaff()->recent()->limit(10)->get();
 				$transactions->loadMissing('events:id,done_by,transaction_id', 'client:id,first_name,middle_name,last_name,occupation', 'events.doneBy:id,name,email', 'account:id,number');
 				break;
 
 			case $this->is_fx_ops_lead:
-				$transactions = Transaction::recent()->limit(10)->get();
+				$transactions = Transaction::openOrInProgress()->recent()->limit(10)->get();
 				$transactions->loadMissing('events:id,done_by,transaction_id', 'client:id,first_name,middle_name,last_name,occupation', 'events.doneBy:id,name,email', 'account:id,number');
 				break;
 
 			case $this->is_fx_ops_manager:
-				$transactions = Transaction::recent()->limit(10)->get();
+				$transactions = Transaction::pendingApproval()->recent()->limit(10)->get();
 				$transactions->loadMissing('events:id,done_by,transaction_id', 'client:id,first_name,middle_name,last_name,occupation', 'events.doneBy:id,name,email', 'account:id,number');
 				break;
 
 			case $this->is_treasury_ops:
-				$transactions = Transaction::recent()->limit(10)->get();
+				$transactions = Transaction::pendingFulfilment()->recent()->limit(10)->get();
 				$transactions->loadMissing('events:id,done_by,transaction_id', 'client:id,first_name,middle_name,last_name,occupation', 'events.doneBy:id,name,email', 'account:id,number');
 				break;
 
 			case $this->is_systems_admin:
-				$transactions = Transaction::recent()->limit(10)->get();
+				$transactions = Transaction::recent()->limit(5)->get();
 				$transactions->loadMissing('events:id,done_by,transaction_id', 'client:id,first_name,middle_name,last_name,occupation', 'events.doneBy:id,name,email', 'account:id,number');
 				break;
 
