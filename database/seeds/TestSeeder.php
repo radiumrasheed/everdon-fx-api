@@ -20,11 +20,13 @@ class TestSeeder extends Seeder
 		Model::unguard();
 
 		$users = array(
-			['role' => 'systems-admin', 'name' => 'Cat ONE', 'email' => 'cat1@everdonbdc.com', 'password' => Hash::make('12345')],
-			['role' => 'fx-ops', 'name' => 'Cat TWO', 'email' => 'cat2@everdonbdc.com', 'password' => Hash::make('12345')],
-			['role' => 'fx-ops-lead', 'name' => 'Cat THREE', 'email' => 'cat3@everdonbdc.com', 'password' => Hash::make('12345')],
-			['role' => 'fx-ops-manager', 'name' => 'Cat FOUR', 'email' => 'cat4@everdonbdc.com', 'password' => Hash::make('12345')],
-			['role' => 'treasury-ops', 'name' => 'Cat FIVE', 'email' => 'cat5@everdonbdc.com', 'password' => Hash::make('12345')]
+			['role' => 'fx-ops', 'name' => 'Amanda', 'email' => 'amanda.omogiafo@everdonbdc.com', 'password' => Hash::make('12345')],
+			['role' => 'treasury-ops', 'name' => 'Chika', 'email' => 'chika.ohakawa@everdonbdc.com', 'password' => Hash::make('12345')],
+			['role' => 'fx-ops-manager', 'name' => 'Damola', 'email' => 'damola@everdon-fx.com', 'password' => Hash::make('12345')],
+			['role' => 'fx-ops-lead', 'name' => 'Tessy', 'email' => 'tessy@everdonbdc.com', 'password' => Hash::make('12345')],
+			['role' => 'fx-ops-manager', 'name' => 'Adeola', 'email' => 'adeola@everdonbdc.com', 'password' => Hash::make('12345')],
+			['role' => 'fx-ops', 'name' => 'Estee', 'email' => 'estee@everdonbdc.com', 'password' => Hash::make('12345')],
+			['role' => 'treasury-ops', 'name' => 'Lookman', 'email' => 'lookman@everdonbdc.com', 'password' => Hash::make('12345')],
 		);
 
 
