@@ -50,7 +50,7 @@ class Transaction extends Model
 	 */
 	protected function generateTransactionRef()
 	{
-		return 'FX' . $this->attributes['transaction_type_id'] . $this->attributes['transaction_mode_id'] . '/' . Carbon::now()->timestamp;
+		return 'FX-' . $this->attributes['transaction_type_id'] . $this->attributes['transaction_mode_id'] . '-' . Carbon::now()->format('YmdHis') . rand(100, 999);
 	}
 
 	protected static function boot()
