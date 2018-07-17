@@ -48,9 +48,12 @@ class CreateTransactionsTable extends Migration
 			$table->string('iban')->nullable();
 
 			$table->string('documents')->nullable();
+			$table->string('referrer')->nullable();
 
 			$table->boolean('kyc_check')->nullable();
 			$table->boolean('aml_check')->nullable();
+			$table->boolean('funds_received')->nullable();
+			$table->boolean('funds_paid')->nullable();
 
 			$table->bigInteger('initiated_by')->nullable();
 			$table->bigInteger('reviewed_by')->nullable();

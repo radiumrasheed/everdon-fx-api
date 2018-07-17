@@ -43,7 +43,10 @@ class TransactionController extends Controller
 	const PASSED = true;
 	const FAILED = false;
 
-	const OTHER_TRANSACTION_TYPES = [self::REFUND, self::EXPENSES];
+	const OTHER_TRANSACTION_TYPES = [
+		self::REFUND,
+		self::EXPENSES
+	];
 
 	protected $is_fx_ops;
 	protected $is_fx_ops_lead;
@@ -66,22 +69,23 @@ class TransactionController extends Controller
 		/**
 		 * @param $request
 		 * @param $next
+		 *
 		 * @return mixed
 		 */
 			function ($request, $next) {
 				try {
-					if (Auth::user() !== null) {
+					if (Auth::user() !== NULL) {
 						$auth = Auth::user();
 
 						$this->is_client = $auth->hasRole('client');
-						$this->is_systems_admin = $auth->hasRole('systems-admin');
 						$this->is_fx_ops = $auth->hasRole('fx-ops');
 						$this->is_fx_ops_lead = $auth->hasRole('fx-ops-lead');
-						$this->is_fx_ops_manager = $auth->hasRole('fx-ops-manager');
 						$this->is_treasury_ops = $auth->hasRole('treasury-ops');
+						$this->is_systems_admin = $auth->hasRole('systems-admin');
+						$this->is_fx_ops_manager = $auth->hasRole('fx-ops-manager');
 					}
 				} catch (\Exception $e) {
-					Log::alert('Tried to validate auth roles');
+					Log::alert('Tried to validate auth roles - ' . $e->getMessage());
 				}
 
 				return $next($request);
@@ -90,20 +94,29 @@ class TransactionController extends Controller
 
 
 	/**
-	 * @param Int $selling
-	 * @param Int $buying
+	 * @param Int      $selling
+	 * @param Int      $buying
 	 * @param int|null $transaction_type_id
+	 *
 	 * @return int
 	 */
-	private function getTransactionType(int $selling, int $buying, int $transaction_type_id = null)
+	private function getTransactionType(int $selling, int $buying, int $transaction_type_id = NULL)
 	{
 		if (in_array($transaction_type_id, self::OTHER_TRANSACTION_TYPES)) {
 			return $this->transaction_type = $transaction_type_id;
 		}
 
 		// Determine transaction type...
-		$have_foreign = in_array($selling, [1, 2, 3]);
-		$want_foreign = in_array($buying, [1, 2, 3]);
+		$have_foreign = in_array($selling, [
+			1,
+			2,
+			3
+		]);
+		$want_foreign = in_array($buying, [
+			1,
+			2,
+			3
+		]);
 		$have_local = in_array($selling, [4]);
 		$want_local = in_array($buying, [4]);
 
@@ -129,10 +142,12 @@ class TransactionController extends Controller
 		return $this->transaction_type = TransactionType::where('name', $type)->firstOrFail()->id;
 	}
 
+
 	/**
 	 * Update buckets for Sales and Purchase Transactions
 	 *
 	 * @param Transaction $transaction
+	 *
 	 * @return bool|string
 	 */
 	private function updateBucketForPurchaseOrSale(Transaction $transaction)
@@ -171,10 +186,12 @@ class TransactionController extends Controller
 		}
 	}
 
+
 	/**
 	 * Update buckets for Cross Transactions
 	 *
 	 * @param Transaction $transaction
+	 *
 	 * @return bool|string
 	 */
 	private function updateBucketForCross(Transaction $transaction)
@@ -187,7 +204,7 @@ class TransactionController extends Controller
 			// Is Purchase or Sales Transaction...
 			$buy = Product::findOrFail($transaction->buying_product_id);
 			$sell = Product::findOrFail($transaction->selling_product_id);
-//			$local = Product::findOrFail($transaction->selling_product_id);
+			//			$local = Product::findOrFail($transaction->selling_product_id);
 
 			// Do calculation...
 			$buy->prev_bucket = $buy->bucket;
@@ -216,12 +233,14 @@ class TransactionController extends Controller
 		}
 	}
 
+
 	/**
 	 * Update WACC
 	 *
-	 * @param int $product_id
+	 * @param int   $product_id
 	 * @param float $amount
 	 * @param float $calculated_amount
+	 *
 	 * @return bool
 	 */
 	private function updateWACC(int $product_id, float $amount, float $calculated_amount)
@@ -256,6 +275,7 @@ class TransactionController extends Controller
 
 		return $success;
 	}
+
 
 	/**
 	 * Display a listing of the resource.
@@ -299,20 +319,12 @@ class TransactionController extends Controller
 		return response()->success(compact('transactions'));
 	}
 
-	/**
-	 * Show the form for creating a new resource.
-	 *
-	 * @return \Illuminate\Http\Response
-	 */
-	public function create()
-	{
-		//
-	}
 
 	/**
 	 * Store a newly created resource in storage.
 	 *
 	 * @param  \Illuminate\Http\Request $req
+	 *
 	 * @return \Illuminate\Http\Response
 	 */
 	public function requestTransaction(Request $req)
@@ -320,61 +332,106 @@ class TransactionController extends Controller
 
 		// Validate the request...
 		$validator = Validator::make($req->all(), [
-			'client_id' => 'exists:clients,id',
+			'client_id'           => 'exists:clients,id',
 			'transaction_type_id' => 'exists:transaction_type,id',
 			'transaction_mode_id' => 'exists:transaction_mode,id',
-			'buying_product_id' => 'required|exists:products,id',
-			'selling_product_id' => 'required|exists:products,id',
-			'amount' => 'required|numeric',
-			'country' => 'required|string',
-			'account_id' => 'exists:accounts,id',
-			'rate' => 'numeric',
-			'account_number' => 'string',
-			'account_name' => 'string',
-			'bank_name' => 'string',
-			'sort_code' => 'string',
-			'swift_code' => 'string',
-			'routing_no' => 'string',
-			'iban' => 'string',
-//			'bvn' => 'string',
+			'buying_product_id'   => 'required|exists:products,id',
+			'selling_product_id'  => 'required|exists:products,id',
+			'amount'              => 'required|numeric',
+			'country'             => 'required|string',
+			'account_id'          => 'exists:accounts,id',
+			'rate'                => 'numeric',
+			'account_number'      => 'string',
+			'account_name'        => 'string',
+			'bank_name'           => 'string',
+			'sort_code'           => 'string',
+			'swift_code'          => 'string',
+			'routing_no'          => 'string',
+			'iban'                => 'string',
+			'referrer'            => 'string',
+			'comment'             => 'string',
 		]);
 
 		if ($validator->fails()) {
 			return response()->error($validator->errors(), 422);
 		}
 
-		if ($this->is_client) {
-			$transaction_type_id = $this->getTransactionType($req->selling_product_id, $req->buying_product_id);
-			$transaction_mode_id = $req->transaction_mode_id;
-			$req->merge(['transaction_type_id' => $transaction_type_id, 'transaction_mode_id' => $transaction_mode_id]);
+		switch (true) {
+			case $this->is_client:
+				$transaction_type_id = $this->getTransactionType($req->selling_product_id, $req->buying_product_id);
+				$transaction_mode_id = $req->transaction_mode_id;
+				$req->merge([
+					'transaction_type_id' => $transaction_type_id,
+					'transaction_mode_id' => $transaction_mode_id
+				]);
+
+				$inputs = $req->only([
+					'client_id',
+					'transaction_type_id',
+					'transaction_mode_id',
+					'buying_product_id',
+					'selling_product_id',
+					'amount',
+					'rate',
+					'sort_code',
+					'swift_code',
+					'routing_no',
+					'iban',
+					'country'
+				]);
+				$client = Auth::user()->client;
+
+				break;
+
+			case $this->is_fx_ops:
+				$inputs = $req->only([
+					'client_id',
+					'transaction_type_id',
+					'transaction_mode_id',
+					'buying_product_id',
+					'selling_product_id',
+					'amount',
+					'rate',
+					'sort_code',
+					'swift_code',
+					'routing_no',
+					'iban',
+					'country',
+					'condition',
+					'referrer'
+				]);
+				$client = Client::findOrFail($req->client_id);
+
+				break;
+
+			default:
+				return response()->error('You are not eligible to make this request', 403);
 		}
 
-		$inputs = $req->only(['client_id', 'transaction_type_id', 'transaction_mode_id', 'buying_product_id', 'selling_product_id', 'amount', 'rate',
-			'sort_code', 'swift_code', 'routing_no', 'iban', 'country']);
-		$transaction_status_id = TransactionStatus::where('name', 'open')->first()->id;
-
-
 		try {
-			// Get Client...
-			if ($this->is_client) {
-				$client = Auth::user()->client;
-			} elseif ($this->is_fx_ops) {
-				$client = Client::findOrFail($req->client_id);
-			} else {
-				return response()->error('You are not allowed to perform this operation!', 403);
-			}
+			// Get the transaction status...
+			$transaction_status_id = TransactionStatus::where('name', 'open')->first()->id;
 
 			// Get or Create Account...
 			if ($req->account_id) {
 				$account = Account::find($req->account_id);
-			} elseif ($req->account_number) {
-				/*$owner_exists = Account::where('number', $r->account_number)->where('client_id', $client->id)->count();
+			} else if ($req->account_number) {
+
+				/*
+				$owner_exists = Account::where('number', $r->account_number)->where('client_id', $client->id)->count();
 				if ($owner_exists == 0) {
 					return response()->success(compact('owner_exists'));
-				}*/
+				}
+				*/
 
-				$account = Account::firstOrCreate(['number' => $req->account_number], ['number' => $req->account_number, 'name' => $req->account_name, 'bank' =>
-					$req->bank_name, 'client_id' => $client->id]);
+				$account = Account::firstOrCreate(
+					['number' => $req->account_number],
+					[
+						'number'    => $req->account_number,
+						'name'      => $req->account_name,
+						'bank'      => $req->bank_name,
+						'client_id' => $client->id
+					]);
 
 				// make sure account doesn't belong to a different client...
 				if ($account->client_id !== $client->id) {
@@ -382,12 +439,11 @@ class TransactionController extends Controller
 				}
 
 				// HACK >>>> get account again so it comes with id...
-//				$account = Account::where('number', $r->account_number)->firstOrFail();
+				// $account = Account::where('number', $r->account_number)->firstOrFail();
 			}
 		} catch (ModelNotFoundException $e) {
 			return response()->error('No such client or account exists');
 		}
-
 
 		$transaction = new Transaction($inputs);
 
@@ -413,6 +469,7 @@ class TransactionController extends Controller
 			$audit->action = 'Requested Transaction';
 			$audit->amount = $transaction->amount;
 			$audit->rate = $transaction->rate;
+			$audit->comment = $req->comment;
 
 			$audit->done_by = Auth::User()->id;
 			$audit->done_at = Carbon::now();
@@ -432,27 +489,29 @@ class TransactionController extends Controller
 		return response()->success(compact('transaction'));
 	}
 
+
 	/**
 	 * Store a newly created resource in storage.
 	 *
 	 * @param  \Illuminate\Http\Request $req
+	 *
 	 * @return \Illuminate\Http\Response
 	 */
 	public function requestExpressTransaction(Request $req)
 	{
 		// Validate the request...
 		$validator = Validator::make($req->all(), [
-			'first_name' => 'required',
-			'last_name' => 'required',
-			'email' => 'required',
-			'phone' => 'required',
-			'amount' => 'required|numeric',
-			'i_have' => 'required',
-			'i_want' => 'required',
+			'first_name'     => 'required',
+			'last_name'      => 'required',
+			'email'          => 'required',
+			'phone'          => 'required',
+			'amount'         => 'required|numeric',
+			'i_have'         => 'required',
+			'i_want'         => 'required',
 			'account_number' => 'required',
-			'account_name' => 'required',
-			'bank_name' => 'required',
-			'bvn' => 'required',
+			'account_name'   => 'required',
+			'bank_name'      => 'required',
+			'bvn'            => 'required',
 		]);
 
 		// todo validate account_id belongs to client_id...
@@ -462,7 +521,6 @@ class TransactionController extends Controller
 
 		// Determine transaction mode...
 		$mode = 'cash'; // todo - Review*
-
 
 		// Get Transaction type, mode and product...
 		try {
@@ -479,18 +537,38 @@ class TransactionController extends Controller
 		$req->merge([
 			'transaction_type_id' => $transaction_type_id,
 			'transaction_mode_id' => $transaction_mode_id,
-			'client_type' => 3, // todo - Review*
-			'buying_product_id' => $buying_product_id,
-			'selling_product_id' => $selling_product_id
+			'client_type'         => 3,
+			// todo - Review*
+			'buying_product_id'   => $buying_product_id,
+			'selling_product_id'  => $selling_product_id
 		]);
-		$inputs = $req->only(['client_id', 'transaction_type_id', 'transaction_mode_id', 'buying_product_id', 'selling_product_id', 'account_id', 'amount']);
+		$inputs = $req->only([
+			'client_id',
+			'transaction_type_id',
+			'transaction_mode_id',
+			'buying_product_id',
+			'selling_product_id',
+			'account_id',
+			'amount'
+		]);
 
 		// Get or Create Client...
-		$client = Client::firstOrCreate($req->only('email'), $req->only(['email', 'first_name', 'middle_name', 'last_name', 'phone', 'client_type']));
+		$client = Client::firstOrCreate($req->only('email'), $req->only([
+			'email',
+			'first_name',
+			'middle_name',
+			'last_name',
+			'phone',
+			'client_type'
+		]));
 
 		// Get or Create Account...
-		$account = Account::firstOrCreate(['number' => $req->account_number], ['client_id' => $client->id, 'number' => $req->account_number, 'name' => $req->account_name, 'bank' =>
-			$req->bank_name]);
+		$account = Account::firstOrCreate(['number' => $req->account_number], [
+			'client_id' => $client->id,
+			'number'    => $req->account_number,
+			'name'      => $req->account_name,
+			'bank'      => $req->bank_name
+		]);
 
 		// Save transaction
 		$transaction = new Transaction($inputs);
@@ -513,11 +591,13 @@ class TransactionController extends Controller
 		return response()->success('Request Successful');
 	}
 
+
 	/**
 	 * Treat an open transaction
 	 *
 	 * @param  \Illuminate\Http\Request $req
-	 * @param $transaction_id
+	 * @param                           $transaction_id
+	 *
 	 * @return \Illuminate\Http\Response
 	 */
 	public function treatTransaction(Request $req, $transaction_id)
@@ -538,19 +618,22 @@ class TransactionController extends Controller
 		$transaction_status_in_progress = TransactionStatus::where('name', $this::IN_PROGRESS)->first()->id;
 
 		// @throw error if transaction is not OPEN or IN PROGRESS...
-		if (!in_array($transaction->transaction_status_id, [$transaction_status_open, $transaction_status_in_progress])) {
+		if (!in_array($transaction->transaction_status_id, [
+			$transaction_status_open,
+			$transaction_status_in_progress
+		])) {
 			return response()->error('Transaction is not OPEN or IN PROGRESS');
 		}
 
 		// Validate the request...
 		$validator = Validator::make($req->all(), [
-//			'account_id' => 'exists:accounts,id',
-			'org_account_id' => 'exists:organizations,id',
-			'condition' => 'string',
-			'comment' => 'string',
-			'amount' => 'numeric',
+			// 'account_id' => 'exists:accounts,id',
+			'org_account_id'    => 'exists:organizations,id',
+			'condition'         => 'string',
+			'comment'           => 'string',
+			'amount'            => 'numeric',
 			'calculated_amount' => 'numeric',
-			'rate' => 'numeric',
+			'rate'              => 'numeric',
 		]);
 
 		// todo validate account_id belongs to client_id
@@ -559,7 +642,14 @@ class TransactionController extends Controller
 			return response()->error($validator->errors(), 422);
 		}
 
-		$inputs = $req->only(['account_id', 'amount', 'rate', 'org_account_id', 'condition', 'calculated_amount']);
+		$inputs = $req->only([
+			'account_id',
+			'amount',
+			'rate',
+			'org_account_id',
+			'condition',
+			'calculated_amount'
+		]);
 		$pending_approval = TransactionStatus::where('name', $this::PENDING_APPROVAL)->first()->id;
 
 		$transaction->transaction_status_id = $pending_approval;
@@ -597,11 +687,13 @@ class TransactionController extends Controller
 		return response()->success(compact('transaction'));
 	}
 
+
 	/**
 	 * Approve a treated transaction
 	 *
 	 * @param  \Illuminate\Http\Request $request
-	 * @param $transaction_id
+	 * @param                           $transaction_id
+	 *
 	 * @return \Illuminate\Http\Response
 	 */
 	public function approveTransaction(Request $request, $transaction_id)
@@ -687,11 +779,13 @@ class TransactionController extends Controller
 		return response()->success(compact('transaction', 'update'));
 	}
 
+
 	/**
 	 * Fulfil an approved transaction
 	 *
 	 * @param  \Illuminate\Http\Request $request
-	 * @param $transaction_id
+	 * @param                           $transaction_id
+	 *
 	 * @return \Illuminate\Http\Response
 	 */
 	public function fulfilTransaction(Request $request, $transaction_id)
@@ -710,7 +804,6 @@ class TransactionController extends Controller
 		} catch (ModelNotFoundException $e) {
 			return response()->error('Transaction does not exist');
 		}
-
 
 		// @throw error if transaction is not OPEN
 		if ($transaction->transaction_status_id != $transaction_status_pending_fulfilment) {
@@ -759,11 +852,13 @@ class TransactionController extends Controller
 		return response()->success(compact('transaction'));
 	}
 
+
 	/**
 	 * Cancel/Close an un-closed transaction
 	 *
 	 * @param  \Illuminate\Http\Request $request
-	 * @param $transaction_id
+	 * @param                           $transaction_id
+	 *
 	 * @return \Illuminate\Http\Response
 	 */
 	public function cancelTransaction(Request $request, $transaction_id)
@@ -783,7 +878,10 @@ class TransactionController extends Controller
 		}
 
 		// @throw error if transaction is already CLOSED or CANCELLED
-		if (in_array($transaction->transaction_status_id, [$transaction_status_closed, $transaction_next_status])) {
+		if (in_array($transaction->transaction_status_id, [
+			$transaction_status_closed,
+			$transaction_next_status
+		])) {
 			return response()->error('Transaction is already CLOSED or CANCELLED');
 		}
 
@@ -821,11 +919,13 @@ class TransactionController extends Controller
 		return response()->success(compact('transaction'));
 	}
 
+
 	/**
 	 * Reject any transaction back for approval
 	 *
 	 * @param  \Illuminate\Http\Request $request
-	 * @param $transaction_id
+	 * @param                           $transaction_id
+	 *
 	 * @return \Illuminate\Http\Response
 	 */
 	public function rejectTransaction(Request $request, $transaction_id)
@@ -902,7 +1002,16 @@ class TransactionController extends Controller
 				$client = Auth::user()->client;
 
 				$transactions = $client->transactions()
-					->select(['id', 'amount', 'transaction_status_id', 'buying_product_id', 'selling_product_id', 'client_id', 'account_id', 'updated_at'])
+					->select([
+						'id',
+						'amount',
+						'transaction_status_id',
+						'buying_product_id',
+						'selling_product_id',
+						'client_id',
+						'account_id',
+						'updated_at'
+					])
 					->orderBy('updated_at', 'desc')
 					->limit(6)->get();
 				$transactions->loadMissing('events:id,done_by,transaction_id', 'events.doneBy:id,name,email', 'account:id,number');
@@ -943,20 +1052,10 @@ class TransactionController extends Controller
 
 
 	/**
-	 * Store a newly created resource in storage.
-	 *
-	 * @param  \Illuminate\Http\Request $request
-	 * @return \Illuminate\Http\Response
-	 */
-	public function store(Request $request)
-	{
-		//
-	}
-
-	/**
 	 * Display the specified resource.
 	 *
 	 * @param $transaction_id
+	 *
 	 * @return \Illuminate\Http\Response
 	 */
 	public function show($transaction_id)
@@ -984,39 +1083,5 @@ class TransactionController extends Controller
 		}
 
 		return response()->success(compact('transaction'));
-	}
-
-	/**
-	 * Show the form for editing the specified resource.
-	 *
-	 * @param  \App\Transaction $transaction
-	 * @return \Illuminate\Http\Response
-	 */
-	public function edit(Transaction $transaction)
-	{
-		//
-	}
-
-	/**
-	 * Update the specified resource in storage.
-	 *
-	 * @param  \Illuminate\Http\Request $request
-	 * @param  \App\Transaction $transaction
-	 * @return \Illuminate\Http\Response
-	 */
-	public function update(Request $request, Transaction $transaction)
-	{
-		//
-	}
-
-	/**
-	 * Remove the specified resource from storage.
-	 *
-	 * @param  \App\Transaction $transaction
-	 * @return \Illuminate\Http\Response
-	 */
-	public function destroy(Transaction $transaction)
-	{
-		//
 	}
 }
