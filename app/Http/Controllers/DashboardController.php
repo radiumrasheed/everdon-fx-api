@@ -49,6 +49,8 @@ class DashboardController extends Controller
 	{
 		if ($this->is_staff) {
 			$products = Product::all();
+		} else {
+			return response()->error('You don\'t have the right permission to view this resource');
 		}
 
 		return response()->success(compact('products'));

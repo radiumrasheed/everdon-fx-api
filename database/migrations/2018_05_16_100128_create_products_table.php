@@ -20,7 +20,11 @@ class CreateProductsTable extends Migration
 			$table->boolean('local');
 
 			$table->decimal('rate', 13, 4)->nullable();
+
 			$table->decimal('wacc', 13, 4)->nullable();
+			$table->decimal('wacc_cash', 13, 4)->nullable();
+			$table->decimal('wacc_transfer', 13, 4)->nullable();
+
 			$table->decimal('prev_wacc', 13, 4)->nullable();
 
 			$table->decimal('seed_value', 13, 4)->nullable();
@@ -29,6 +33,8 @@ class CreateProductsTable extends Migration
 			$table->decimal('prev_seed_value_local', 13, 4)->nullable();
 
 			$table->decimal('bucket', 13, 4)->nullable();
+			$table->decimal('bucket_transfer', 13, 4)->nullable();
+			$table->decimal('bucket_cash', 13, 4)->nullable();
 			$table->decimal('prev_bucket', 13, 4)->nullable();
 			$table->decimal('bucket_local', 13, 4)->nullable();
 			$table->decimal('prev_bucket_local', 13, 4)->nullable();
