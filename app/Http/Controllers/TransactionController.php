@@ -40,6 +40,9 @@ class TransactionController extends Controller
 	const EXPENSES = 5;
 	const CROSS = 6;
 
+	const CASH = 1;
+	const TRANSFER = 2;
+
 	const PASSED = true;
 	const FAILED = false;
 
@@ -162,17 +165,44 @@ class TransactionController extends Controller
 			// Do calculation...
 			$buy->prev_bucket = $buy->bucket;
 			$buy->prev_bucket_local = $buy->bucket_local;
-			$buy->bucket = $buy->bucket - $transaction->amount;
-			if ($buy->bucket < 0) {
-				throw new \Exception('Not enough funds to approve request!');
+			switch ($transaction->transaction_mode_id) {
+				case self::CASH:
+					$buy->bucket_cash = $buy->bucket_cash - $transaction->amount;
+					if ($buy->bucket_cash < 0) {
+						throw new \Exception('Not enough funds to approve request!');
+					}
+
+					break;
+				case self::TRANSFER:
+					$buy->bucket_transfer = $buy->bucket_transfer - $transaction->amount;
+					if ($buy->bucket_transfer < 0) {
+						throw new \Exception('Not enough funds to approve request!');
+					}
+
+					break;
+				default:
+					throw new \Exception('Transaction Mode not recognised!');
 			}
-			$buy->bucket_local = $buy->wacc * $buy->bucket;
+			$buy->bucket = $buy->bucket - $transaction->amount;
+			$buy->bucket_local = $transaction->rate * $buy->bucket;     // todo REVIEW
 			$buy->save();
 
 			$sell->prev_bucket = $sell->bucket;
 			$sell->prev_bucket_local = $sell->bucket_local;
-			$sell->bucket = $sell->bucket + $transaction->calculated_amount;
-			$sell->bucket_local = $sell->wacc * $sell->bucket;
+			switch ($transaction->transaction_mode_id) {
+				case self::CASH:
+					$sell->bucket_cash = $sell->bucket_cash + ($transaction->amount * $transaction->rate);
+
+					break;
+				case self::TRANSFER:
+					$sell->bucket_transfer = $sell->bucket_transfer + ($transaction->amount * $transaction->rate);
+
+					break;
+				default:
+					throw new \Exception('Transaction Mode not recognised!');
+			}
+			$sell->bucket = $sell->bucket + ($transaction->amount * $transaction->rate);
+			$sell->bucket_local = $transaction->rate * $sell->bucket;       // todo REVIEW
 			$sell->save();
 
 			DB::commit();

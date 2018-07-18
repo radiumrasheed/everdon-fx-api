@@ -23,7 +23,7 @@ class TransactionModeSeeder extends Seeder
 		$datas = array(
 			['name' => 'cash', 'description' => 'Cash'],
 			['name' => 'transfer', 'description' => 'Transfer'],
-			['name' => 'offshore', 'description' => 'Offshore'],
+			// ['name' => 'offshore', 'description' => 'Offshore'],
 		);
 
 		// Loop through each data above and create the record for them in the database
