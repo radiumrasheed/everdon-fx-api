@@ -14,6 +14,23 @@ class Product extends Model
 		return $this->hasMany('App\Timeline', 'product_id')->select(['product_id', 'value', 'created_at']);
 	}
 
+
+	public function scopeIgnoreLocalProduct()
+	{
+		return $this->where('local', false);
+	}
+
+
+	public function scopeClientRates()
+	{
+		return $this->select([
+			'id',
+			'description',
+			'name',
+			'rate'
+		]);
+	}
+
 	public function wacc()
 	{
 		return $this->hasMany('App\Timeline', 'product_id')->select(['value as y', 'created_at as x']);
