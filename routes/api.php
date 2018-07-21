@@ -19,8 +19,7 @@ Route::post('auth/admin-login', 'JwtAuthenticateController@authenticateAdmin');
 Route::post('auth/reset-password', 'PasswordController@sendResetPasswordEmail');
 Route::post('auth/signup', 'JwtAuthenticateController@createUser');
 
-
-// Express Transaction...
+// Express Transaction...m
 Route::post('transactions/express', 'TransactionController@requestExpressTransaction');
 
 
@@ -45,15 +44,17 @@ Route::group(['middleware' => ['role:systems-admin']], function () {
 Route::group(['middleware' => ['role:systems-admin|fx-ops|fx-ops-lead|fx-ops-manager|treasury-ops|client']], function () {
 
 	// Client Routes...
-	Route::post('clients/individual', 'ClientController@storeIndividual');
-	Route::post('clients/cooperate', 'ClientController@storecooperate');
 	Route::get('clients/search/{term}', 'ClientController@search');
-	Route::get('clients/{id}', 'ClientController@show');
 	Route::get('clients/{client_id}/accounts', 'ClientController@accounts');
+	Route::get('clients/{id}', 'ClientController@show');
+	Route::get('clients', 'ClientController@index');
+
 	Route::post('clients/{client_id}/account', 'ClientController@addAccount');
+	Route::post('clients/{client_id}/avatar', 'ClientController@updateAvatar');
+	Route::post('clients/cooperate', 'ClientController@storecooperate');
+	Route::post('clients/individual', 'ClientController@storeIndividual');
 	Route::post('clients/{id}/upload', 'ClientController@updateAvatar');
 	Route::post('clients/{id}', 'ClientController@update');
-	Route::get('clients', 'ClientController@index');
 
 
 	// Transaction Routes...

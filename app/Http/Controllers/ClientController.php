@@ -269,25 +269,32 @@ class ClientController extends Controller
 	{
 		// Fetch the client...
 		try {
-			$client = Client::where('id', $client_id)->firstOrFail();
+			$client = Client::findOrFail($client_id);
 		} catch (ModelNotFoundException $e) {
 			return response()->error('Client Profile does not exist');
 		}
 
 		$this->validate($req, [
-			'avatar' => 'required|mimes:jpeg,bmp,jpg,png|between:1, 6000',
+			'image' => 'required|mimes:jpeg,bmp,jpg,png|between:1, 6000',
 		]);
 
-		if ($req->file('avatar')->isValid()) {
-			Cloudder::upload($req->avatar, null);
+		if ($req->file('image')->isValid()) {
+			Cloudder::upload($req->image, NULL);
 
-			$image_url = Cloudder::show(Cloudder::getPublicId(), ["width" => 200, "height" => 200]);
+			$image_url = Cloudder::show(Cloudder::getPublicId(), ["width"  => 100,
+			                                                      "height" => 100,
+			                                                      "crop"   => 'scale'
+			]);
 
 			$client->update(['avatar' => $image_url]);
+			Auth::user()->update(['avatar' => $image_url]);
+
+			$avatar = $client->avatar;
+		} else {
+			return response()->error('Please upload a valid image');
 		}
 
-
-		return response()->success(compact('client'));
+		return response()->success(compact('avatar'));
 
 
 	}
