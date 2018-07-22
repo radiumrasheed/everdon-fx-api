@@ -24,7 +24,7 @@ class CreateTransactionsTable extends Migration
 			$table->bigInteger('transaction_mode_id');
 			$table->bigInteger('transaction_status_id');
 
-			$table->bigInteger('client_id');
+			$table->uuid('client_id');
 			$table->bigInteger('selling_product_id');
 			$table->bigInteger('buying_product_id');
 			$table->bigInteger('account_id')->nullable();

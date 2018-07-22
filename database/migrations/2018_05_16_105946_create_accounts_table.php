@@ -15,7 +15,7 @@ class CreateAccountsTable extends Migration
 	{
 		Schema::create('accounts', function (Blueprint $table) {
 			$table->increments('id');
-			$table->bigInteger('client_id');
+			$table->uuid('client_id');
 			$table->boolean('default')->default(false);
 			$table->string('number')->unique();
 			$table->string('name');

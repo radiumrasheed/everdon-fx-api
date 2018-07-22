@@ -15,7 +15,7 @@ class CreateClientKYCsTable extends Migration
 	{
 		Schema::create('client_kyc', function (Blueprint $table) {
 			$table->increments('id');
-			$table->bigInteger('client_id');
+			$table->uuid('client_id');
 
 			$table->boolean('status')->default(0);
 			$table->boolean('awaiting_review')->default(0);

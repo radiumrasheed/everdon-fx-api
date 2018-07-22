@@ -3,6 +3,7 @@
 namespace App;
 
 use Illuminate\Database\Eloquent\Model;
+use Webpatser\Uuid\Uuid;
 
 class Client extends Model
 {
@@ -44,6 +45,19 @@ class Client extends Model
 		'rc_number'
 	];
 
+	public $incrementing = false;
+
+
+	protected static function boot()
+	{
+		parent::boot();
+
+		static::creating(function (Model $model) {
+			$model->{$model->getKeyName()} = Uuid::generate()->string;
+		});
+	}
+
+
 	/**
 	 * Get the accounts of client.
 	 */
@@ -51,6 +65,7 @@ class Client extends Model
 	{
 		return $this->hasMany('App\Account', 'client_id');
 	}
+
 
 	/**
 	 * Get the client's transactions.
@@ -60,6 +75,7 @@ class Client extends Model
 		return $this->hasMany('App\Transaction', 'client_id')->orderByDesc('updated_at');
 	}
 
+
 	/**
 	 * Get the type of client.
 	 */
@@ -67,6 +83,7 @@ class Client extends Model
 	{
 		return $this->hasOne('App\ClientType');
 	}
+
 
 	/**
 	 * Get the KYC details of the client
@@ -76,11 +93,13 @@ class Client extends Model
 		return $this->hasOne('App\ClientKYC', 'client_id');
 	}
 
+
 	/**
 	 * Scope a search query
 	 *
 	 * @param \Illuminate\Database\Eloquent\Builder $query
-	 * @param $term
+	 * @param                                       $term
+	 *
 	 * @return \Illuminate\Database\Eloquent\Builder
 	 */
 	public function scopeSearch($query, $term)
@@ -90,6 +109,12 @@ class Client extends Model
 			->orWhere('last_name', 'like', '%' . $term . '%')
 			->orWhere('middle_name', 'like', '%' . $term . '%')
 			->orWhere('email', 'like', '%' . $term . '%')
-			->select(['id', 'first_name', 'last_name', 'middle_name', 'email']);
+			->select([
+				'id',
+				'first_name',
+				'last_name',
+				'middle_name',
+				'email'
+			]);
 	}
 }
