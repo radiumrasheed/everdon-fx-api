@@ -51,6 +51,7 @@ Route::group(['middleware' => ['role:systems-admin|fx-ops|fx-ops-lead|fx-ops-man
 
 	Route::post('clients/{client_id}/account', 'ClientController@addAccount');
 	Route::post('clients/{client_id}/avatar', 'ClientController@updateAvatar');
+	Route::post('clients/{client_id}/validate_kyc', 'ClientController@validateKYC');
 	Route::post('clients/cooperate', 'ClientController@storecooperate');
 	Route::post('clients/individual', 'ClientController@storeIndividual');
 	Route::post('clients/{id}/upload', 'ClientController@updateAvatar');

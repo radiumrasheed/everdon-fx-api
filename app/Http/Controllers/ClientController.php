@@ -8,6 +8,7 @@ use App\ClientType;
 use App\User;
 use Illuminate\Database\Eloquent\ModelNotFoundException;
 use Illuminate\Http\Request;
+use Illuminate\Support\Carbon;
 use Illuminate\Support\Facades\Auth;
 use Illuminate\Support\Facades\Storage;
 use Illuminate\Support\Facades\Validator;
@@ -297,6 +298,47 @@ class ClientController extends Controller
 		return response()->success(compact('avatar'));
 
 
+	}
+
+
+	/**
+	 * Update client avatar
+	 *
+	 * @param Request $req
+	 * @param         $client_id
+	 *
+	 * @return object
+	 */
+	public function validateKYC(Request $req, $client_id)
+	{
+		if (!$this->is_staff) {
+			return response()->error('You\'re not allowed to perform the requested operation! ');
+		}
+
+		// Fetch the client...
+		try {
+			$client = Client::findOrFail($client_id);
+		} catch (ModelNotFoundException $e) {
+			return response()->error('Client Profile does not exist');
+		}
+
+		// Validate the request...
+		$validator = Validator::make($req->all(), [
+			'status' => 'required|boolean'
+		]);
+		if ($validator->fails()) {
+			return response()->error($validator->errors(), 422);
+		}
+
+		$kyc = $client->kyc;
+		$kyc->status = $req->status;
+		$kyc->awaiting_review = false;
+		$kyc->last_reviewed_at = Carbon::now();
+		$kyc->last_reviewed_by = Auth::User()->id;
+
+		$client->kyc()->save($kyc);
+
+		return response()->success(compact('client'));
 	}
 
 
