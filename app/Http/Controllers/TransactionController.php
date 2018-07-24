@@ -658,12 +658,13 @@ class TransactionController extends Controller
 		// Validate the request...
 		$validator = Validator::make($req->all(), [
 			// 'account_id' => 'exists:accounts,id',
-			'org_account_id'    => 'exists:organizations,id',
-			'condition'         => 'string',
-			'comment'           => 'string',
-			'amount'            => 'numeric',
-			'calculated_amount' => 'numeric',
-			'rate'              => 'numeric',
+			'org_account_id' => 'exists:organizations,id',
+			'condition'      => 'string',
+			'comment'        => 'string',
+			'amount'         => 'numeric',
+			'rate'           => 'numeric',
+			'aml_ckeck'      => 'boolean',
+			'kyc_check'      => 'boolean',
 		]);
 
 		// todo validate account_id belongs to client_id
@@ -678,10 +679,13 @@ class TransactionController extends Controller
 			'rate',
 			'org_account_id',
 			'condition',
-			'calculated_amount'
+			'calculated_amount',
+			'kyc_check',
+			'aml_check'
 		]);
 		$pending_approval = TransactionStatus::where('name', $this::PENDING_APPROVAL)->first()->id;
 
+		$transaction->calculated_amount = $transaction->rate * $transaction->amount;
 		$transaction->transaction_status_id = $pending_approval;
 		$transaction->reviewed_by = Auth::user()->id;
 		$transaction->reviewed_at = Carbon::now();
@@ -750,7 +754,9 @@ class TransactionController extends Controller
 
 		// Validate the request...
 		$validator = Validator::make($request->all(), [
-			'comment' => 'string',
+			'org_account_id' => 'exists:organizations,id',
+			'condition'      => 'string',
+			'comment'        => 'string',
 		]);
 		if ($validator->fails()) {
 			return response()->error($validator->errors(), 422);
@@ -777,7 +783,8 @@ class TransactionController extends Controller
 		$transaction->transaction_status_id = $transaction_next_status;
 		$transaction->approved_by = Auth::user()->id;
 		$transaction->approved_at = Carbon::now();
-		$transaction->fill($inputs);
+		$transaction->org_account_id = $request->org_account_id;
+		$transaction->condition = $request->condition;
 		$transaction->update();
 
 		// trail Event
@@ -786,10 +793,8 @@ class TransactionController extends Controller
 		$event->transaction_status_id = $transaction->transaction_status_id;
 		$event->action = 'Approved Transaction';
 		$event->comment = $request->comment;
-		$event->calculated_amount = $transaction->calculated_amount;
 		$event->condition = $transaction->condition;
 		$event->org_account_id = $transaction->org_account_id;
-		$event->rate = $transaction->rate;
 		$event->done_by = Auth::User()->id;
 		$event->done_at = Carbon::now();
 		$event->save();
@@ -842,7 +847,9 @@ class TransactionController extends Controller
 
 		// Validate the request...
 		$validator = Validator::make($request->all(), [
-			'comment' => 'string',
+			'comment'        => 'string',
+			'funds_paid'     => 'boolean',
+			'funds_received' => 'boolean',
 		]);
 
 		if ($validator->fails()) {
@@ -853,7 +860,8 @@ class TransactionController extends Controller
 		$transaction->transaction_status_id = $transaction_next_status;
 		$transaction->closed_by = Auth::user()->id;
 		$transaction->closed_at = Carbon::now();
-		$transaction->fill($inputs);
+		$transaction->funds_paid = $request->funds_paid;
+		$transaction->funds_received = $request->funds_received;
 		$transaction->update();
 
 		// trail Event
