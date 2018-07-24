@@ -71,6 +71,9 @@ Route::group(['middleware' => ['role:systems-admin|fx-ops|fx-ops-lead|fx-ops-man
 	// Account Routes...
 	Route::resource('accounts', 'AccountController')->only('index');
 
+	// Product Rates...
+	Route::get('products/rates', 'ProductController@getRates');
+
 
 	// Dashboard Routes...
 	Route::get('dashboard/counts', 'DashboardController@counts');

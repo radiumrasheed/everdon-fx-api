@@ -19,6 +19,19 @@ class ProductController extends Controller
 		return response()->success(compact('products'));
 	}
 
+
+	/**
+	 * Display a listing of the resource.
+	 *
+	 * @return \Illuminate\Http\Response
+	 */
+	public function getRates()
+	{
+		$rates = Product::clientRates()->get();
+
+		return response()->success(compact('rates'));
+	}
+
 	/**
 	 * Show the form for creating a new resource.
 	 *
