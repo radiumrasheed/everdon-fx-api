@@ -22,6 +22,7 @@ Route::post('auth/signup', 'JwtAuthenticateController@createUser');
 // Express Transaction...m
 Route::post('transactions/express', 'TransactionController@requestExpressTransaction');
 
+Route::get('clients/document/{dir}/{file_name}', 'ClientController@getDocument');
 
 // API route group that we need to protect for only system-admins...
 Route::group(['middleware' => ['role:systems-admin']], function () {
@@ -51,6 +52,7 @@ Route::group(['middleware' => ['role:systems-admin|fx-ops|fx-ops-lead|fx-ops-man
 
 	Route::post('clients/{client_id}/account', 'ClientController@addAccount');
 	Route::post('clients/{client_id}/avatar', 'ClientController@updateAvatar');
+	Route::post('clients/{client_id}/identity', 'ClientController@updateIdentity');
 	Route::post('clients/{client_id}/validate_kyc', 'ClientController@validateKYC');
 	Route::post('clients/cooperate', 'ClientController@storecooperate');
 	Route::post('clients/individual', 'ClientController@storeIndividual');
