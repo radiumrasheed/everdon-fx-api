@@ -344,11 +344,11 @@ class TransactionController extends Controller
 				break;
 
 			case $this->is_fx_ops:
-				$transactions = Transaction::initiatedByStaff()->orderBy('updated_at', 'desc')->get();
+				$transactions = Transaction::orderBy('updated_at', 'desc')->get();
 				break;
 
 			case $this->is_fx_ops_lead:
-				$transactions = Transaction::openOrInProgress()->orderBy('updated_at', 'desc')->get();
+				$transactions = Transaction::orderBy('updated_at', 'desc')->get();
 				break;
 
 			case $this->is_fx_ops_manager:
@@ -508,6 +508,10 @@ class TransactionController extends Controller
 		}
 
 		$transaction->transaction_status_id = $transaction_status_id;
+		if (($transaction->rate = $this->getRate($transaction->buying_product_id, $transaction->selling_product_id)) === self::FAILED) {
+			return response()->error('Unable to apply rate');
+		}
+		$transaction->calculated_amount = $transaction->amount * $transaction->rate;
 		$transaction->client()->associate($client);
 		if (isset($account)) {
 			$transaction->account()->associate($account);
@@ -1145,5 +1149,22 @@ class TransactionController extends Controller
 		}
 
 		return response()->success(compact('transaction'));
+	}
+
+
+	private function getRate($buying_product_id, $selling_product_id)
+	{
+		$rates = Product::clientRates()->get();
+
+		$b = $buying_product_id;
+		$s = $selling_product_id;
+
+		if ($rates) {
+			try {
+				return $rate = round(($rates[$b - 1]['rate'] / $rates[$s - 1]['rate']), 4);
+			} catch (\Exception $e) {
+				return self::FAILED;
+			}
+		}
 	}
 }
