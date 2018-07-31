@@ -565,7 +565,7 @@ class TransactionController extends Controller
 			'account_number' => 'required|digits:10',
 			'account_name'   => 'required',
 			'bank_name'      => 'required',
-			'bvn'            => 'required',
+			'bvn'            => 'required|digits:10',
 		]);
 
 		// todo validate account_id belongs to client_id...

@@ -225,6 +225,7 @@ class ClientController extends Controller
 			'first_name' => 'required',
 			'last_name'  => 'required',
 			'phone'      => 'required',
+			'bvn'        => 'required|digits:10',
 			//			'identification_document' => 'mimes:jpeg,bmp,jpg,png|between:1, 6000',
 		]);
 
