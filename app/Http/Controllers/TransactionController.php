@@ -473,7 +473,6 @@ class TransactionController extends Controller
 			'swift_code'          => 'string',
 			'routing_no'          => 'string',
 			'iban'                => 'string',
-			'swap_charges'        => 'numeric',
 			'referrer'            => 'string',
 			'comment'             => 'string',
 		]);
