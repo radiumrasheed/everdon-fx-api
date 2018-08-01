@@ -34,6 +34,7 @@ class Transaction extends Model
 		'documents',
 		'org_account_id',
 		'calculated_amount',
+		'swap_charges',
 		'rate'
 	];
 

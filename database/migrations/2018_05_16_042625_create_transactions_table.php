@@ -33,6 +33,7 @@ class CreateTransactionsTable extends Migration
 			$table->decimal('amount', 13, 4);
 			$table->decimal('rate', 13, 4)->nullable();
 			$table->decimal('calculated_amount', 13, 4)->nullable();
+			$table->decimal('swap_charges', 13, 4)->nullable();
 
 			$table->decimal('wacc', 13, 4)->nullable();
 			$table->decimal('inventory', 13, 4)->nullable();
