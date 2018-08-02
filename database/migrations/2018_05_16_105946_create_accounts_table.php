@@ -17,9 +17,17 @@ class CreateAccountsTable extends Migration
 			$table->increments('id');
 			$table->uuid('client_id');
 			$table->boolean('default')->default(false);
+			$table->boolean('foreign')->default(false);
 			$table->string('number')->unique();
 			$table->string('name');
 			$table->string('bank');
+
+			$table->string('bank_address')->nullable();
+			$table->string('swift_code')->nullable();
+			$table->string('routing_no')->nullable();
+			$table->string('sort_code')->nullable();
+			$table->string('iban')->nullable();
+
 			$table->timestamps();
 		});
 	}

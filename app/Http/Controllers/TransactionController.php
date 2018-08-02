@@ -97,6 +97,33 @@ class TransactionController extends Controller
 
 
 	/**
+	 *  Get Rate
+	 *
+	 * @param $buying_product_id
+	 * @param $selling_product_id
+	 *
+	 * @return bool|float
+	 */
+	private function getRate($buying_product_id, $selling_product_id)
+	{
+		$rates = Product::clientRates()->get();
+
+		$b = $buying_product_id;
+		$s = $selling_product_id;
+
+		if ($rates) {
+			try {
+				return $rate = round(($rates[$b - 1]['rate'] / $rates[$s - 1]['rate']), 4);
+			} catch (\Exception $e) {
+				return self::FAILED;
+			}
+		}
+	}
+
+
+	/**
+	 *  Get Transaction Type
+	 *
 	 * @param Int      $selling
 	 * @param Int      $buying
 	 * @param int|null $transaction_type_id
@@ -498,10 +525,6 @@ class TransactionController extends Controller
 					'selling_product_id',
 					'amount',
 					'rate',
-					'sort_code',
-					'swift_code',
-					'routing_no',
-					'iban',
 					'country'
 				]);
 				$client = Auth::user()->client;
@@ -521,11 +544,7 @@ class TransactionController extends Controller
 					'selling_product_id',
 					'amount',
 					'rate',
-					'sort_code',
 					'swap_charges',
-					'swift_code',
-					'routing_no',
-					'iban',
 					'country',
 					'condition',
 					'referrer'
@@ -562,7 +581,13 @@ class TransactionController extends Controller
 						'number'    => $req->account_number,
 						'name'      => $req->account_name,
 						'bank'      => $req->bank_name,
-						'client_id' => $client->id
+						'client_id' => $client->id,
+
+						'foreign'      => $req->foreign,
+						'bank_address' => $req->bank_address,
+						'routing_no'   => $req->routing_no,
+						'sorting_code' => $req->sort_code,
+						'iban'         => $req->iban,
 					]);
 
 				// make sure account doesn't belong to a different client...
@@ -1146,7 +1171,7 @@ class TransactionController extends Controller
 	/**
 	 * Get last 3 transactions
 	 *
-	 * @return mixed
+	 * @return \Illuminate\Http\Response
 	 */
 	public function recentTransactions()
 	{
@@ -1200,7 +1225,6 @@ class TransactionController extends Controller
 		}
 
 		return response()->success(compact('transactions'));
-
 	}
 
 
@@ -1236,22 +1260,5 @@ class TransactionController extends Controller
 		}
 
 		return response()->success(compact('transaction'));
-	}
-
-
-	private function getRate($buying_product_id, $selling_product_id)
-	{
-		$rates = Product::clientRates()->get();
-
-		$b = $buying_product_id;
-		$s = $selling_product_id;
-
-		if ($rates) {
-			try {
-				return $rate = round(($rates[$b - 1]['rate'] / $rates[$s - 1]['rate']), 4);
-			} catch (\Exception $e) {
-				return self::FAILED;
-			}
-		}
 	}
 }

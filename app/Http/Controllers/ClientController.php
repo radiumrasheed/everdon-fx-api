@@ -564,12 +564,26 @@ class ClientController extends Controller
 			'number' => 'required|digits:10|unique:accounts',
 			'name'   => 'required|string',
 			'bank'   => 'required|string',
+
+			'foreign'      => 'boolean',
+			'bank_address' => 'string',
+			'swift_code'   => 'string',
+			'routing_no'   => 'string',
+			'sort_code'    => 'string',
+			'iban'         => 'string',
 		]);
 
 		$account = new Account([
 			'name'   => $req->name,
 			'number' => $req->number,
-			'bank'   => $req->bank
+			'bank'   => $req->bank,
+
+			'bank_address' => $req->bank_address,
+			'foreign'      => $req->foreign,
+			'swift_code'   => $req->swift_code,
+			'routing_no'   => $req->routing_no,
+			'sort_code'    => $req->sort_code,
+			'iban'         => $req->iban,
 		]);
 		$client->accounts()->save($account);
 
