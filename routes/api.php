@@ -66,6 +66,7 @@ Route::group(['middleware' => ['role:systems-admin|fx-ops|fx-ops-lead|fx-ops-man
 	Route::put('transactions/{id}/fulfil', 'TransactionController@fulfilTransaction');
 	Route::patch('transactions/{id}/cancel', 'TransactionController@cancelTransaction');
 	Route::patch('transactions/{id}/reject', 'TransactionController@rejectTransaction');
+	Route::patch('transactions/{id}/update', 'TransactionController@updateTransaction');
 	Route::get('transactions/{id}', 'TransactionController@show');
 	Route::post('transactions', 'TransactionController@requestTransaction');
 	Route::get('transactions', 'TransactionController@index');

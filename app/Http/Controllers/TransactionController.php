@@ -796,7 +796,7 @@ class TransactionController extends Controller
 			'rate'           => 'numeric',
 			// 'aml_check'      => 'boolean',
 			// 'kyc_check'      => 'boolean',
-			'swap_charges'   => 'numeric',
+			// 'swap_charges'   => 'numeric',
 		]);
 
 		// todo validate account_id belongs to client_id
@@ -850,6 +850,64 @@ class TransactionController extends Controller
 			$emails[] = $recipient->email;
 		}
 		Notification::route('mail', $emails)->notify(new NotifyStaff($transaction, Auth::user()->staff, $audit));
+
+		return response()->success(compact('transaction'));
+	}
+
+
+	/**
+	 * Update a transaction
+	 *
+	 * @param  \Illuminate\Http\Request $req
+	 * @param  int                      $transaction_id
+	 *
+	 * @return \Illuminate\Http\Response
+	 */
+	public function updateTransaction(Request $req, $transaction_id)
+	{
+		// check role...
+		if (!($this->is_fx_ops_lead || $this->is_fx_ops)) {
+			return response()->error('You don\'t have the permission to perform the requested action!');
+		}
+
+		// Get the transaction...
+		try {
+			$transaction = Transaction::with('client')->findOrFail($transaction_id);
+		} catch (ModelNotFoundException $e) {
+			return response()->error('Transaction does not exist');
+		}
+
+		// Validate the request...
+		$validator = Validator::make($req->all(), [
+			'funds_paid'     => 'boolean',
+			'funds_received' => 'boolean',
+		]);
+		if ($validator->fails()) {
+			return response()->error($validator->errors(), 422);
+		}
+
+		// Update Funds check
+		$transaction->funds_paid = $req->funds_paid;
+		$transaction->funds_received = $req->funds_received;
+		$transaction->update();
+
+		// trail Event
+		$audit = new TransactionEvent();
+		$audit->transaction_id = $transaction->id;
+		$audit->transaction_status_id = $transaction->transaction_status_id;
+		$audit->action = 'Updated Transaction';
+		$audit->comment = $req->comment ? $req->comment : 'Updated Fund checks';
+		// todo add account_id
+		$audit->calculated_amount = $transaction->calculated_amount;
+		$audit->condition = $transaction->condition;
+		$audit->org_account_id = $transaction->org_account_id;
+		$audit->rate = $transaction->rate;
+
+		$audit->done_by = Auth::user()->id;
+		$audit->done_at = Carbon::now();
+		$audit->save();
+
+		$transaction = Transaction::with('client', 'client.kyc', 'account', 'events')->findOrFail($transaction->id);
 
 		return response()->success(compact('transaction'));
 	}
