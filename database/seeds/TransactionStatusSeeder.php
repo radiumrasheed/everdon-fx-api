@@ -28,6 +28,9 @@ class TransactionStatusSeeder extends Seeder
 			['name' => 'cancelled', 'description' => 'Cancelled'],
 			['name' => 'closed', 'description' => 'Closed'],
 			['name' => 'raised', 'description' => 'Raised'],
+			['name'        => 'closed-processed',
+			 'description' => 'Closed & Processed'
+			],
 		);
 
 		// Loop through each data above and create the record for them in the database
