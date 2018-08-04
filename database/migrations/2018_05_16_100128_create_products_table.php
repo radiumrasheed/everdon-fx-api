@@ -19,7 +19,7 @@ class CreateProductsTable extends Migration
 			$table->string('description');
 			$table->boolean('local');
 
-			$table->decimal('rate', 13, 4)->nullable();
+			$table->decimal('rate', 13, 2)->nullable();
 
 			$table->decimal('wacc', 13, 4)->nullable();
 			$table->decimal('wacc_cash', 13, 4)->nullable();

@@ -17,7 +17,7 @@ class CreateTimelineTable extends Migration
 			$table->increments('id');
 			$table->bigInteger('product_id');
 			$table->decimal('value', 13, 4);
-			$table->decimal('rate', 13, 4)->nullable();
+			$table->decimal('rate', 13, 2)->nullable();
 			$table->timestamps();
 		});
 	}

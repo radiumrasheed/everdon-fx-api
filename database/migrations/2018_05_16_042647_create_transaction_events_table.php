@@ -25,7 +25,7 @@ class CreateTransactionEventsTable extends Migration
 
 			$table->decimal('amount', 13, 4)->nullable();
 			$table->decimal('calculated_amount', 13, 4)->nullable();
-			$table->decimal('rate', 13, 4)->nullable();
+			$table->decimal('rate', 13, 2)->nullable();
 
 			$table->bigInteger('done_by');
 			$table->dateTime('done_at');
