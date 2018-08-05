@@ -42,6 +42,7 @@ class TransactionController extends Controller
 
 	const CASH = 1;
 	const TRANSFER = 2;
+	const CASH_DEPOSIT = 3;
 
 	const PASSED = true;
 	const FAILED = false;
@@ -193,7 +194,9 @@ class TransactionController extends Controller
 			$buy->prev_bucket = $buy->bucket;
 			$buy->prev_bucket_local = $buy->bucket_local;
 			switch ($transaction->transaction_mode_id) {
+
 				case self::CASH:
+				case self::CASH_DEPOSIT:
 					$buy->bucket_cash = $buy->bucket_cash - $transaction->amount;
 					if ($buy->bucket_cash < 0) {
 						throw new \Exception('Not enough funds to approve request!');
@@ -217,7 +220,9 @@ class TransactionController extends Controller
 			$sell->prev_bucket = $sell->bucket;
 			$sell->prev_bucket_local = $sell->bucket_local;
 			switch ($transaction->transaction_mode_id) {
+
 				case self::CASH:
+				case self::CASH_DEPOSIT:
 					$sell->bucket_cash = $sell->bucket_cash + ($transaction->amount * $transaction->rate);
 
 					break;
@@ -263,8 +268,11 @@ class TransactionController extends Controller
 			// Do calculation...
 			$buy->prev_bucket = $buy->bucket;
 			$buy->prev_bucket_local = $buy->bucket_local;
+
+			// Select Cash or Transfer Bucket
 			switch ($transaction->transaction_mode_id) {
 				case self::CASH:
+				case self::CASH_DEPOSIT:
 					$buy->bucket_cash = $buy->bucket_cash - $transaction->amount;
 					if ($buy->bucket_cash < 0) {
 						throw new \Exception('Not enough funds to approve request!');
@@ -287,8 +295,11 @@ class TransactionController extends Controller
 
 			$sell->prev_bucket = $sell->bucket;
 			$sell->prev_bucket_local = $sell->bucket_local;
+
+			// Select Cash or Transfer Bucket
 			switch ($transaction->transaction_mode_id) {
 				case self::CASH:
+				case self::CASH_DEPOSIT:
 					$sell->bucket_cash = $sell->bucket_cash + ($transaction->amount * $transaction->rate);
 
 					break;
@@ -335,7 +346,9 @@ class TransactionController extends Controller
 			$buy->prev_bucket = $buy->bucket;
 			$buy->prev_bucket_local = $buy->bucket_local;
 			switch ($transaction->transaction_mode_id) {
+
 				case self::CASH:
+				case self::CASH_DEPOSIT:
 					$buy->bucket_cash = $buy->bucket_cash - $transaction->amount;
 					if ($buy->bucket_cash < 0) {
 						throw new \Exception('Not enough funds to approve request!');
@@ -359,7 +372,9 @@ class TransactionController extends Controller
 			$sell->prev_bucket = $sell->bucket;
 			$sell->prev_bucket_local = $sell->bucket_local;
 			switch ($transaction->transaction_mode_id) {
+
 				case self::CASH:
+				case self::CASH_DEPOSIT:
 					$sell->bucket_cash = $sell->bucket_cash + (($transaction->amount * $transaction->rate) + $transaction->swap_charges);
 
 					break;

@@ -173,8 +173,6 @@ class ClientController extends Controller
 	{
 		$client = Client::with('accounts', 'kyc')->findOrFail($client);
 
-		//		$client = Client::find($client);
-
 		return response()->success(compact('client'));
 	}
 

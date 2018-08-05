@@ -24,6 +24,9 @@ class TransactionModeSeeder extends Seeder
 			['name' => 'cash', 'description' => 'Cash'],
 			['name' => 'transfer', 'description' => 'Transfer'],
 			// ['name' => 'offshore', 'description' => 'Offshore'],
+			['name'        => 'cash-deposit',
+			 'description' => 'Cash Deposit'
+			],
 		);
 
 		// Loop through each data above and create the record for them in the database
