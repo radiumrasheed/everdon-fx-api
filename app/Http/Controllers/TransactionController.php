@@ -540,6 +540,7 @@ class TransactionController extends Controller
 					'selling_product_id',
 					'amount',
 					'rate',
+					'purpose',
 					'country'
 				]);
 				$client = Auth::user()->client;
@@ -548,6 +549,27 @@ class TransactionController extends Controller
 
 			case $this->is_fx_ops:
 				$transaction_type_id = $this->getTransactionType($req->selling_product_id, $req->buying_product_id, $req->transaction_type_id);
+
+				if ($transaction_type_id === 4) {
+					// Check if it has Originating ID
+					if (!$req->originating_id) {
+						return response()->error('A Refund transaction must have an originating transaction!');
+					}
+
+					$d_transaction = Transaction::where('originating_id', $req->originating_id);
+					if (!empty($d_transaction)) {
+						return response()->error('Transaction has been refunded already!');
+					}
+
+					$o_transaction = Transaction::findOrFail($req->originating_id);
+					if (!in_array($o_transaction->transaction_status_id, [
+						6,
+						8
+					])) {
+						return response()->error('The Originating Transaction cannot be refunded!');
+					}
+				}
+
 				$req->merge([
 					'transaction_type_id' => $transaction_type_id,
 				]);
@@ -562,6 +584,7 @@ class TransactionController extends Controller
 					'swap_charges',
 					'country',
 					'condition',
+					'purpose',
 					'referrer'
 				]);
 				$client = Client::findOrFail($req->client_id);
@@ -578,16 +601,10 @@ class TransactionController extends Controller
 
 			// Get or Create Account...
 			if ($req->account_id) {
-				$account = Account::find($req->account_id);
+				// Get Account
+				$account = Account::findOrFail($req->account_id);
 			} else if ($req->account_number) {
-
-				/*
-				$owner_exists = Account::where('number', $r->account_number)->where('client_id', $client->id)->count();
-				if ($owner_exists == 0) {
-					return response()->success(compact('owner_exists'));
-				}
-				*/
-
+				// Create Account
 				$account = Account::firstOrCreate(
 					[
 						'number' => $req->account_number
@@ -604,15 +621,15 @@ class TransactionController extends Controller
 						'sorting_code' => $req->sort_code,
 						'iban'         => $req->iban,
 					]);
-
-				// make sure account doesn't belong to a different client...
-				if ($account->client_id !== $client->id) {
-					return response()->error('Account details provided belongs to a different customer');
-				}
-
-				// HACK >>>> get account again so it comes with id...
-				// $account = Account::where('number', $r->account_number)->firstOrFail();
+			} else {
+				return response()->error($req->all());
 			}
+
+			// make sure account doesn't belong to a different client...
+			if ($account->client_id !== $client->id) {
+				return response()->error('Account details provided belongs to a different customer');
+			}
+
 		} catch (ModelNotFoundException $e) {
 			return response()->error('No such client or account exists');
 		}
@@ -621,6 +638,10 @@ class TransactionController extends Controller
 
 		// Check if user is fx-Ops
 		if ($this->is_fx_ops) {
+			// Check if its a Refund
+			if ($transaction_type_id === 4) {
+				$transaction->originating_id = $req->originating_id;
+			}
 			$transaction->initiated_by = Auth::user()->id;
 			$transaction->initiated_at = Carbon::now();
 		}
