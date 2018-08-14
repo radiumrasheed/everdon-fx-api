@@ -381,8 +381,8 @@ class ClientController extends Controller
 
 		// Validate the request...
 		$validator = Validator::make($req->all(), [
-			'identification'          => 'required|string',
-			'identification_number'   => 'required|string',
+			'identification'          => 'string',
+			'identification_number'   => 'string',
 			'identification_document' => 'mimes:jpeg,bmp,jpg,png,pdf|between:1, 6000',
 			'cac_document'            => 'mimes:jpeg,bmp,jpg,png,pdf|between:1, 6000',
 		]);
