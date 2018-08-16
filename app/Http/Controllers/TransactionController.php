@@ -683,6 +683,10 @@ class TransactionController extends Controller
 		}
 		Notification::route('mail', $emails)->notify(new NotifyStaff($transaction));
 
+		// Notify client...
+		if ($this->is_client) {
+			Notification::route('mail', $transaction->client->email)->notify(new NotifyClient($transaction, NULL));
+		}
 		return response()->success(compact('transaction'));
 	}
 
@@ -1043,6 +1047,9 @@ class TransactionController extends Controller
 			$emails[] = $recipient->email;
 		}
 		Notification::route('mail', $emails)->notify(new NotifyStaff($transaction, Auth::user()->staff, $event));
+
+		// Notify Client
+		Notification::route('mail', $transaction->client->email)->notify(new NotifyClient($transaction, $event));
 
 		// Return response...
 		return response()->success(compact('transaction', 'update'));

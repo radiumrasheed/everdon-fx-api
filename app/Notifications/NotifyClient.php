@@ -16,22 +16,25 @@ class NotifyClient extends Notification implements ShouldQueue
 	public $transaction;
 	public $event;
 
+
 	/**
 	 * Create a new notification instance.
 	 *
-	 * @param Transaction $transaction
+	 * @param Transaction      $transaction
 	 * @param TransactionEvent $event
 	 */
-	public function __construct(Transaction $transaction, TransactionEvent $event)
+	public function __construct(Transaction $transaction, TransactionEvent $event = NULL)
 	{
 		$this->transaction = $transaction;
 		$this->event = $event;
 	}
 
+
 	/**
 	 * Get the notification's delivery channels.
 	 *
 	 * @param  mixed $notifiable
+	 *
 	 * @return array
 	 */
 	public function via($notifiable)
@@ -39,32 +42,42 @@ class NotifyClient extends Notification implements ShouldQueue
 		return ['mail'];
 	}
 
+
 	/**
 	 * Get the mail representation of the notification.
 	 *
 	 * @param  mixed $notifiable
+	 *
 	 * @return \Illuminate\Notifications\Messages\MailMessage
 	 */
 	public function toMail($notifiable)
 	{
 		$url = config('custom.client.host') . '/#/me/transaction/details/' . $this->transaction->id;
 
-		switch ((string)$this->event->action) {
-			case 'Transaction Rejected':
-				$message = 'A transaction has been rejected and awaiting review.';
-				break;
+		if ($this->event !== NULL) {
+			switch ((string) $this->event->action) {
+				case 'Transaction Rejected':
+					$message = 'A transaction has been rejected and awaiting review.';
+					break;
 
-			case 'Fulfilled and Closed Transaction':
-				$message = 'Your transaction has been fulfilled.';
-				break;
+				case 'Fulfilled and Closed Transaction':
+					$message = 'Your transaction has been fulfilled.';
+					break;
 
-			default:
-				$greeting = 'Hello,';
-				$message = 'A transaction has been reviewed.';
+				case 'Cancelled Transaction':
+					$message = 'Your transaction has been cancelled for some reasons. Please contact support or request another.';
+					break;
+
+				default:
+					$message = 'Your Transaction has been reviewed.';
+			}
+		} else {
+			$message = 'Your Transaction Request has been received! Watch here for updates.';
 		}
 
+
 		return (new MailMessage)
-			->subject($this->event->action)
+			->subject($this->event !== NULL ? $this->event->action : 'Transaction Request Submitted')
 			->greeting('Hello ' . $this->transaction->client->first_name . ' ' . $this->transaction->client->last_name . ',')
 			->line($message)
 			->action('View Transaction', $url)
@@ -75,10 +88,12 @@ class NotifyClient extends Notification implements ShouldQueue
 		);*/
 	}
 
+
 	/**
 	 * Get the array representation of the notification.
 	 *
 	 * @param  mixed $notifiable
+	 *
 	 * @return array
 	 */
 	public function toArray($notifiable)
