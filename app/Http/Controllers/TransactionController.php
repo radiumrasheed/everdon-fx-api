@@ -22,6 +22,7 @@ use Illuminate\Support\Facades\Notification;
 use Illuminate\Support\Facades\Auth;
 use Illuminate\Support\Facades\Log;
 use Illuminate\Support\Facades\Validator;
+use phpDocumentor\Reflection\Types\Self_;
 
 class TransactionController extends Controller
 {
@@ -40,7 +41,7 @@ class TransactionController extends Controller
 	const EXPENSES = 5;
 	const CROSS = 6;
 
-	const CASH = 1;
+	const CASH = 1 or '1';
 	const TRANSFER = 2;
 	const CASH_DEPOSIT = 3;
 
@@ -501,6 +502,7 @@ class TransactionController extends Controller
 			'amount'              => 'required|numeric',
 			'country'             => 'required|string',
 			'account_id'          => 'exists:accounts,id',
+			'is_domiciliary'      => 'boolean',
 			'rate'                => 'numeric',
 			'account_number'      => 'string|digits:10',
 			'account_name'        => 'string',
@@ -532,6 +534,7 @@ class TransactionController extends Controller
 					'transaction_mode_id',
 					'buying_product_id',
 					'selling_product_id',
+					'is_domiciliary',
 					'amount',
 					'rate',
 					'purpose',
@@ -570,9 +573,10 @@ class TransactionController extends Controller
 				$inputs = $req->only([
 					'client_id',
 					'transaction_type_id',
-					'transaction_mode_id',
+					'transaction_type_id',
 					'buying_product_id',
 					'selling_product_id',
+					'is_domiciliary',
 					'amount',
 					'rate',
 					'swap_charges',
@@ -615,13 +619,15 @@ class TransactionController extends Controller
 						'sorting_code' => $req->sort_code,
 						'iban'         => $req->iban,
 					]);
-			} else {
-				return response()->error($req->all());
+			} else if ($req->transaction_mode_id != self::CASH) {
+				return response()->error('Account Details required for Non-Cash Transactions');
 			}
 
 			// make sure account doesn't belong to a different client...
-			if ($account->client_id !== $client->id) {
-				return response()->error('Account details provided belongs to a different customer');
+			if (isset($account)) {
+				if ($account->client_id !== $client->id) {
+					return response()->error('Account details provided belongs to a different customer');
+				}
 			}
 
 		} catch (ModelNotFoundException $e) {

@@ -29,6 +29,7 @@ class CreateTransactionsTable extends Migration
 			$table->bigInteger('selling_product_id');
 			$table->bigInteger('buying_product_id');
 			$table->bigInteger('account_id')->nullable();
+			$table->bigInteger('is_domiciliary')->nullable();
 			$table->bigInteger('org_account_id')->nullable();
 
 			$table->decimal('amount', 13, 4);

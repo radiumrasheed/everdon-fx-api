@@ -18,6 +18,7 @@ class Transaction extends Model
 		'transaction_type_id',
 		'transaction_mode_id',
 		'account_id',
+		'is_domiciliary',
 		'buying_product_id',
 		'selling_product_id',
 		'amount',
