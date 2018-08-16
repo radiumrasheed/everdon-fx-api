@@ -68,7 +68,7 @@ class NotifyStaff extends Notification implements ShouldQueue
 				break;
 
 			case 'Treated Transaction':
-				$greeting = 'Dear FX Ops Lead/Manager Member,';
+				$greeting = 'Dear FX Ops / Manager Member,';
 				$message = 'A transaction has been treated and awaiting approval.';
 				break;
 

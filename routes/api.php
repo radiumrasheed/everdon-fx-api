@@ -42,7 +42,7 @@ Route::group(['middleware' => ['role:systems-admin']], function () {
 
 
 // API route group that we need to protect...
-Route::group(['middleware' => ['role:systems-admin|fx-ops|fx-ops-lead|fx-ops-manager|treasury-ops|client']], function () {
+Route::group(['middleware' => ['role:systems-admin|fx-ops|fx-ops|fx-ops-manager|treasury-ops|client']], function () {
 
 	// Client Routes...
 	Route::get('clients/search/{term}', 'ClientController@search');

@@ -23,7 +23,12 @@ use Tymon\JWTAuth\Facades\JWTAuth;
  */
 class JwtAuthenticateController extends Controller
 {
-	const STAFFS = ['fx-ops', 'systems-admin', 'fx-ops-lead', 'fx-ops-manager', 'treasury-ops'];
+	const STAFFS = [
+		'fx-ops',
+		'systems-admin',
+		'fx-ops-manager',
+		'treasury-ops'
+	];
 
 
 	/**

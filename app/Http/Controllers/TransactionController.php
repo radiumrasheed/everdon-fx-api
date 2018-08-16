@@ -53,7 +53,6 @@ class TransactionController extends Controller
 	];
 
 	protected $is_fx_ops;
-	protected $is_fx_ops_lead;
 	protected $is_treasury_ops;
 	protected $is_fx_ops_manager;
 	protected $is_systems_admin;
@@ -83,7 +82,6 @@ class TransactionController extends Controller
 
 						$this->is_client = $auth->hasRole('client');
 						$this->is_fx_ops = $auth->hasRole('fx-ops');
-						$this->is_fx_ops_lead = $auth->hasRole('fx-ops-lead');
 						$this->is_treasury_ops = $auth->hasRole('treasury-ops');
 						$this->is_systems_admin = $auth->hasRole('systems-admin');
 						$this->is_fx_ops_manager = $auth->hasRole('fx-ops-manager');
@@ -460,10 +458,6 @@ class TransactionController extends Controller
 				$transactions = Transaction::orderBy('updated_at', 'desc')->get();
 				break;
 
-			case $this->is_fx_ops_lead:
-				$transactions = Transaction::orderBy('updated_at', 'desc')->get();
-				break;
-
 			case $this->is_fx_ops_manager:
 				$transactions = Transaction::pendingApproval()->orderBy('updated_at', 'desc')->get();
 				break;
@@ -804,7 +798,7 @@ class TransactionController extends Controller
 	public function treatTransaction(Request $req, $transaction_id)
 	{
 		// check role...
-		if (!$this->is_fx_ops_lead) {
+		if (!$this->is_fx_ops) {
 			return response()->error('You don\'t have the permission to perform the requested action!');
 		}
 
@@ -885,7 +879,7 @@ class TransactionController extends Controller
 		$transaction = Transaction::with('client', 'client.kyc', 'account', 'events')->findOrFail($transaction->id);
 
 		// Notify all users in the next role...
-		$recipients = User::withRole('fx-ops-manager', 'fx-ops-lead')->get();
+		$recipients = User::withRole('fx-ops-manager', 'fx-ops')->get();
 		foreach ($recipients as $recipient) {
 			$emails[] = $recipient->email;
 		}
@@ -906,7 +900,7 @@ class TransactionController extends Controller
 	public function updateTransaction(Request $req, $transaction_id)
 	{
 		// check role...
-		if (!($this->is_fx_ops_lead || $this->is_fx_ops)) {
+		if (!$this->is_fx_ops) {
 			return response()->error('You don\'t have the permission to perform the requested action!');
 		}
 
@@ -1298,11 +1292,6 @@ class TransactionController extends Controller
 
 			case $this->is_fx_ops:
 				$transactions = Transaction::initiatedByStaff()->recent()->limit(10)->get();
-				$transactions->loadMissing('events:id,done_by,transaction_id', 'client:id,first_name,middle_name,last_name,occupation', 'events.doneBy:id,name,email', 'account:id,number');
-				break;
-
-			case $this->is_fx_ops_lead:
-				$transactions = Transaction::openOrInProgress()->recent()->limit(10)->get();
 				$transactions->loadMissing('events:id,done_by,transaction_id', 'client:id,first_name,middle_name,last_name,occupation', 'events.doneBy:id,name,email', 'account:id,number');
 				break;
 

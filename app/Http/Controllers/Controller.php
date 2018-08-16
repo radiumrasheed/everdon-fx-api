@@ -18,6 +18,7 @@ class Controller extends BaseController
 	/** Requesting user is a staff */
 	protected $is_staff = false;
 
+
 	/**
 	 * Controller constructor.
 	 */
@@ -26,9 +27,14 @@ class Controller extends BaseController
 
 		$this->middleware(function ($request, $next) {
 			try {
-				if (Auth::user() !== null) {
+				if (Auth::user() !== NULL) {
 					$this->is_client = Auth::user()->hasRole('client');
-					$this->is_staff = Auth::user()->hasRole(['systems-admin', 'fx-ops', 'fx-ops-manager', 'fx-ops-lead', 'treasury-ops']);
+					$this->is_staff = Auth::user()->hasRole([
+						'systems-admin',
+						'fx-ops',
+						'fx-ops-manager',
+						'treasury-ops'
+					]);
 				}
 			} catch (\Exception $e) {
 				Log::alert('Tried to authenticate');
