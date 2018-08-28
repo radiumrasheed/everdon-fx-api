@@ -648,7 +648,7 @@ class TransactionController extends Controller
 				$inputs = $req->only([
 					'client_id',
 					'transaction_type_id',
-					'transaction_type_id',
+					'transaction_mode_id',
 					'buying_product_id',
 					'selling_product_id',
 					'is_domiciliary',
