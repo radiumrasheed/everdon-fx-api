@@ -27,7 +27,8 @@ class Product extends Model
 			'id',
 			'description',
 			'name',
-			'rate'
+			'rate',
+			'local'
 		]);
 	}
 
