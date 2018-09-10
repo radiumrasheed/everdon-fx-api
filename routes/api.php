@@ -14,10 +14,12 @@ use Illuminate\Support\Facades\Route;
 */
 
 // Authentication route
-Route::post('auth/login', 'JwtAuthenticateController@authenticate');
-Route::post('auth/admin-login', 'JwtAuthenticateController@authenticateAdmin');
-Route::post('auth/reset-password', 'PasswordController@sendResetPasswordEmail');
-Route::post('auth/signup', 'JwtAuthenticateController@createUser');
+Route::prefix('auth')->group(function () {
+	Route::post('login', 'JwtAuthenticateController@authenticate');
+	Route::post('admin-login', 'JwtAuthenticateController@authenticateAdmin');
+	Route::post('reset-password', 'PasswordController@sendResetPasswordEmail');
+	Route::post('signup', 'JwtAuthenticateController@createUser');
+});
 
 // Express Transaction...m
 Route::post('transactions/express', 'TransactionController@requestExpressTransaction');
@@ -40,37 +42,41 @@ Route::group(['middleware' => ['role:systems-admin']], function () {
 
 });
 
-
 // API route group that we need to protect...
 Route::group(['middleware' => ['role:systems-admin|fx-ops|fx-ops|fx-ops-manager|treasury-ops|client']], function () {
 
 	// Client Routes...
-	Route::get('clients/search/{term}', 'ClientController@search');
-	Route::get('clients/{client_id}/accounts', 'ClientController@accounts');
-	Route::get('clients/{id}', 'ClientController@show');
-	Route::get('clients', 'ClientController@index');
+	Route::prefix('clients')->group(function () {
+		Route::get('search/{term}', 'ClientController@search');
+		Route::get('{client_id}/accounts', 'ClientController@accounts');
+		Route::get('{id}', 'ClientController@show');
+		Route::get('', 'ClientController@index');
 
-	Route::post('clients/{client_id}/account', 'ClientController@addAccount');
-	Route::post('clients/{client_id}/avatar', 'ClientController@updateAvatar');
-	Route::post('clients/{client_id}/identity', 'ClientController@updateIdentity');
-	Route::post('clients/{client_id}/validate_kyc', 'ClientController@validateKYC');
-	Route::post('clients/cooperate', 'ClientController@storecooperate');
-	Route::post('clients/individual', 'ClientController@storeIndividual');
-	Route::post('clients/{id}/upload', 'ClientController@updateAvatar');
-	Route::post('clients/{id}', 'ClientController@update');
-
+		Route::post('{client_id}/account', 'ClientController@addAccount');
+		Route::post('{client_id}/avatar', 'ClientController@updateAvatar');
+		Route::post('{client_id}/identity', 'ClientController@updateIdentity');
+		Route::post('{client_id}/validate_kyc', 'ClientController@validateKYC');
+		Route::post('cooperate', 'ClientController@storecooperate');
+		Route::post('individual', 'ClientController@storeIndividual');
+		Route::post('{id}/upload', 'ClientController@updateAvatar');
+		Route::post('{id}', 'ClientController@update');
+	});
 
 	// Transaction Routes...
-	Route::put('transactions/{id}/treat', 'TransactionController@treatTransaction');
-	Route::put('transactions/{id}/approve', 'TransactionController@approveTransaction');
-	Route::put('transactions/{id}/fulfil', 'TransactionController@fulfilTransaction');
-	Route::patch('transactions/{id}/cancel', 'TransactionController@cancelTransaction');
-	Route::patch('transactions/{id}/reject', 'TransactionController@rejectTransaction');
-	Route::patch('transactions/{id}/update', 'TransactionController@updateTransaction');
-	Route::get('transactions/{id}', 'TransactionController@show');
-	Route::post('transactions', 'TransactionController@requestTransaction');
-	Route::get('transactions', 'TransactionController@index');
+	Route::prefix('transactions')->name('transaction.')->group(function () {
+		Route::put('{id}/treat', 'TransactionController@treatTransaction')->name('treat');
+		Route::put('{id}/approve', 'TransactionController@approveTransaction')->name('approve');
+		Route::put('{id}/fulfil', 'TransactionController@fulfilTransaction')->name('fulfil');
 
+		Route::patch('{id}/cancel', 'TransactionController@cancelTransaction')->name('cancel');
+		Route::patch('{id}/reject', 'TransactionController@rejectTransaction')->name('reject');
+		Route::patch('{id}/update', 'TransactionController@updateTransaction')->name('update');
+
+		Route::post('', 'TransactionController@requestTransaction')->name('request');
+
+		Route::get('{id}', 'TransactionController@show')->name('show');
+		Route::get('', 'TransactionController@index')->name('all');
+	});
 
 	// Account Routes...
 	Route::resource('accounts', 'AccountController')->only('index');
@@ -78,18 +84,17 @@ Route::group(['middleware' => ['role:systems-admin|fx-ops|fx-ops|fx-ops-manager|
 	// Product Rates...
 	Route::get('products/rates', 'ProductController@getRates');
 
-
 	// Dashboard Routes...
-	Route::get('dashboard/counts', 'DashboardController@counts');
-	Route::get('dashboard/figures', 'DashboardController@figures');
-	Route::get('dashboard/buckets', 'DashboardController@bucketBalance');
-	Route::get('dashboard/timeline/wacc', 'DashboardController@WACCTimeline');
-	Route::get('dashboard/timeline/rate', 'DashboardController@rateTimeline');
-	Route::get('dashboard/recent_transactions', 'TransactionController@recentTransactions');
-	Route::get('dashboard/recent_events', 'DashboardController@recentEvents');
-
+	Route::prefix('dashboard')->group(function () {
+		Route::get('counts', 'DashboardController@counts');
+		Route::get('figures', 'DashboardController@figures');
+		Route::get('buckets', 'DashboardController@bucketBalance');
+		Route::get('timeline/wacc', 'DashboardController@WACCTimeline');
+		Route::get('timeline/rate', 'DashboardController@rateTimeline');
+		Route::get('recent_transactions', 'TransactionController@recentTransactions');
+		Route::get('recent_events', 'DashboardController@recentEvents');
+	});
 });
-
 
 // Public Routes for fill-ables...
 Route::resource('products', 'ProductController')->only('index');
