@@ -1323,7 +1323,7 @@ class TransactionController extends Controller
 		$event = new TransactionEvent();
 		$event->transaction_id = $transaction->id;
 		$event->transaction_status_id = $transaction->transaction_status_id;
-		$event->action = 'Transaction Rejected';
+		$event->action = 'Returned Transaction';
 		$event->comment = $request->comment;
 		$event->calculated_amount = $transaction->calculated_amount;
 		$event->condition = $transaction->condition;

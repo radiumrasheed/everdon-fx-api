@@ -77,7 +77,7 @@ class NotifyStaff extends Notification implements ShouldQueue
 				$message = 'A new transaction has been requested and awaiting review.';
 				break;
 
-			case 'Transaction Rejected':
+			case 'Returned Transaction':
 				$greeting = 'Dear FX Ops Member,';
 				$message = 'A transaction has been rejected and awaiting review.';
 				break;

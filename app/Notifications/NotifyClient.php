@@ -56,7 +56,7 @@ class NotifyClient extends Notification implements ShouldQueue
 
 		if ($this->event !== NULL) {
 			switch ((string) $this->event->action) {
-				case 'Transaction Rejected':
+				case 'Returned Transaction':
 					$message = 'A transaction has been rejected and awaiting review.';
 					break;
 
