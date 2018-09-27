@@ -25,11 +25,13 @@ class DashboardController extends Controller
 				break;
 
 			case $this->is_staff:
-				$open = Transaction::where('transaction_status_id', 1)->count();
-				$in_progress = Transaction::where('transaction_status_id', 2)->count();
-				$pending_approval = Transaction::where('transaction_status_id', 3)->count();
-				$pending_fulfilment = Transaction::where('transaction_status_id', 4)->count();
-				$closed = Transaction::where('transaction_status_id', 5)->count();
+				$open = Transaction::open()->count();
+				$in_progress = Transaction::inProgress()->count();
+				$pending_approval = Transaction::pendingApproval()->count();
+				$pending_fulfilment = Transaction::pendingFulfilment()->count();
+				$cancelled = Transaction::cancelled()->count();
+				$closed = Transaction::closed()->count();
+				$raised = Transaction::raised()->count();
 				$transactions = Transaction::all()->count();
 				break;
 
@@ -37,8 +39,12 @@ class DashboardController extends Controller
 				$transactions = 0;
 		}
 
-		return response()->success(compact('transactions', 'open_transactions', 'closed_transactions', 'accounts', 'open', 'in_progress', 'pending_approval', 'pending_fulfilment', 'closed'));
+		return response()->success(compact(
+			'transactions', 'open_transactions', 'closed_transactions', 'accounts', 'open',
+			'in_progress', 'pending_approval', 'pending_fulfilment', 'closed', 'raised', 'cancelled'
+		));
 	}
+
 
 	/**
 	 * Get bucket balance for all currencies
@@ -59,6 +65,7 @@ class DashboardController extends Controller
 
 	}
 
+
 	/**
 	 * Get WACC rate of foreign currencies
 	 *
@@ -77,6 +84,7 @@ class DashboardController extends Controller
 		return response()->success(compact('usd', 'eur', 'gbp'));
 	}
 
+
 	/**
 	 * Get WACC rate of foreign currencies
 	 *
@@ -92,6 +100,7 @@ class DashboardController extends Controller
 		return response()->success(compact('usd', 'eur', 'gbp'));
 	}
 
+
 	public function counts()
 	{
 		$open = Transaction::open()->count();
@@ -100,9 +109,11 @@ class DashboardController extends Controller
 		$pending_fulfilment = Transaction::pendingFulfilment()->count();
 		$cancelled = Transaction::cancelled()->count();
 		$closed = Transaction::closed()->count();
+		$raised = Transaction::raised()->count();
 
-		return response()->success(compact('open', 'in_progress', 'pending_approval', 'pending_fulfilment', 'cancelled', 'closed'));
+		return response()->success(compact('open', 'in_progress', 'pending_approval', 'pending_fulfilment', 'cancelled', 'closed', 'raised'));
 	}
+
 
 	public function recentEvents()
 	{

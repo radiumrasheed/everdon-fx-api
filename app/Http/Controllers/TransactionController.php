@@ -22,7 +22,6 @@ use Illuminate\Support\Facades\Notification;
 use Illuminate\Support\Facades\Auth;
 use Illuminate\Support\Facades\Log;
 use Illuminate\Support\Facades\Validator;
-use phpDocumentor\Reflection\Types\Self_;
 
 class TransactionController extends Controller
 {

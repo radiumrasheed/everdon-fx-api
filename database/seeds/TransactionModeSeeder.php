@@ -21,11 +21,18 @@ class TransactionModeSeeder extends Seeder
 		DB::table('transaction_mode')->delete();
 
 		$datas = array(
-			['name' => 'cash', 'description' => 'Cash'],
-			['name' => 'transfer', 'description' => 'Transfer'],
+			[
+				'name'        => 'cash',
+				'description' => 'Cash'
+			],
+			[
+				'name'        => 'transfer',
+				'description' => 'Transfer'
+			],
 			// ['name' => 'offshore', 'description' => 'Offshore'],
-			['name'        => 'cash-deposit',
-			 'description' => 'Cash Deposit'
+			[
+				'name'        => 'cash-deposit',
+				'description' => 'Cash Deposit'
 			],
 		);
 

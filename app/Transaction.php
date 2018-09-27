@@ -113,7 +113,7 @@ class Transaction extends Model
 
 	public function scopeClosed($query)
 	{
-		return $query->where('transaction_status_id', 6);
+		return $query->where('transaction_status_id', 6)->orWhere('transaction_status_id', 8);
 	}
 
 
