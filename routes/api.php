@@ -40,6 +40,8 @@ Route::group(['middleware' => ['role:systems-admin']], function () {
 	// Route to get all users
 	Route::get('users', 'JwtAuthenticateController@index');
 
+	Route::resource('products', 'ProductController')->only('update');
+
 });
 
 // API route group that we need to protect...
