@@ -3,6 +3,7 @@
 namespace App\Http\Middleware;
 
 use Closure;
+use Illuminate\Http\Response;
 use Tymon\JWTAuth\Exceptions\JWTException;
 use Tymon\JWTAuth\Exceptions\TokenExpiredException;
 use Tymon\JWTAuth\Middleware\BaseMiddleware;
@@ -23,7 +24,7 @@ class TokenEntrustAbility extends BaseMiddleware
 	{
 
 		if (!$token = $this->auth->setRequest($request)->getToken()) {
-			return $this->respond('tymon.jwt.absent', 'token_not_provided', 400);
+			return $this->respond('tymon.jwt.absent', 'token_not_provided', Response::HTTP_UNAUTHORIZED);
 		}
 
 		try {
@@ -35,7 +36,7 @@ class TokenEntrustAbility extends BaseMiddleware
 		}
 
 		if (!$user) {
-			return $this->respond('tymon.jwt.user_not_found', 'user_not_found', 404);
+			return $this->respond('tymon.jwt.user_not_found', 'user_not_found', Response::HTTP_UNAUTHORIZED);
 		}
 
 		if (!$request->user()->ability(explode('|', $roles), explode('|', $permissions), array('validate_all' => $validateAll))) {
