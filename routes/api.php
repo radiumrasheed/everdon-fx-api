@@ -41,6 +41,7 @@ Route::group(['middleware' => ['role:systems-admin']], function () {
 	Route::get('users', 'JwtAuthenticateController@index');
 
 	Route::resource('products', 'ProductController')->only('update');
+	Route::resource('staffs', 'StaffController');
 
 });
 

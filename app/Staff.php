@@ -16,4 +16,10 @@ class Staff extends Model
 		'email',
 		'phone',
 	];
+
+
+	public function user()
+	{
+		return $this->belongsTo('App\User');
+	}
 }
