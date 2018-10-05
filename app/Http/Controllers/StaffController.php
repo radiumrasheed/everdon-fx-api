@@ -2,8 +2,11 @@
 
 namespace App\Http\Controllers;
 
+use App\Role;
 use App\Staff;
+use App\User;
 use Illuminate\Http\Request;
+use Illuminate\Support\Facades\Hash;
 
 class StaffController extends Controller
 {
@@ -33,7 +36,29 @@ class StaffController extends Controller
 	 */
 	public function store(Request $request)
 	{
-		//
+		// @todo validation...
+
+		$role = Role::where('name', $request->role)->firstOrFail();
+
+		$staff = Staff::create([
+			'first_name' => $request->first_name,
+			'last_name'  => $request->last_name,
+			'email'      => $request->email,
+			'gender'     => $request->gender,
+			'phone'      => $request->phone
+		]);
+		$_user = User::create([
+			'name'     => $request->first_name . ' ' . $request->last_name,
+			'email'    => $request->email,
+			'password' => Hash::make($request->password)
+		]);
+
+		$_user->staff()->save($staff);
+		$_user->roles()->attach($role->id);
+
+		$staff->loadMissing('user', 'user.roles');
+
+		return response()->success(compact('staff'));
 	}
 
 

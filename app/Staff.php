@@ -13,6 +13,7 @@ class Staff extends Model
 		'first_name',
 		'last_name',
 		'middle_name',
+		'gender',
 		'email',
 		'phone',
 	];
