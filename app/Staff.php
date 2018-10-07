@@ -23,4 +23,19 @@ class Staff extends Model
 	{
 		return $this->belongsTo('App\User');
 	}
+
+
+	/**
+	 * The "booting" method of the model.
+	 *
+	 * @return void
+	 */
+	public static function boot()
+	{
+		parent::boot();
+
+		static::deleting(function ($staff) {
+			$staff->user()->delete();
+		});
+	}
 }
