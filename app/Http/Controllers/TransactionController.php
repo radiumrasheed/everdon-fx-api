@@ -25,7 +25,7 @@ use Illuminate\Support\Facades\Validator;
 
 class TransactionController extends Controller
 {
-	const OPEN = 'open';
+
 	const IN_PROGRESS = 'in-progress';
 	const PENDING_APPROVAL = 'pending-approval';
 	const PENDING_FULFILMENT = 'pending-fulfilment';
@@ -50,6 +50,20 @@ class TransactionController extends Controller
 	const OTHER_TRANSACTION_TYPES = [
 		self::REFUND,
 		self::EXPENSES
+	];
+
+	// hack 😉
+	const ALL_IDS = [
+		1,
+		2,
+		3,
+		4,
+		5,
+		6,
+		7,
+		8,
+		9,
+		10
 	];
 
 	protected $is_fx_ops;
@@ -551,6 +565,33 @@ class TransactionController extends Controller
 
 		// Load missing client data along with transaction
 		$transactions->loadMissing('client:id,first_name,last_name,middle_name,occupation');
+
+		return response()->success(compact('transactions'));
+	}
+
+
+	public function paginate(Request $request)
+	{
+		$per_page = $request->query('per_page', 15);
+		$sort_field = $request->query('sort_field', 'id');
+		$sort_order = $request->query('sort_order', 'desc');
+		$statuses = array_filter(explode(',', $request->query('status', [])));
+		$types = array_filter(explode(',', $request->query('type', [])));
+		$created_at = array_filter(explode(',', $request->query('created_at', [])));
+
+		Log::debug($created_at);
+
+		$sort_field = !empty($sort_field) ? $sort_field : 'id';
+		$sort_order = !empty($sort_order) ? $sort_order : 'asc';
+		// $statuses = !empty($statuses) ? $statuses : self::ALL_IDS;
+		// $types = !empty($types) ? $types : self::ALL_IDS;
+
+		$transactions = Transaction::orderBy($sort_field, $sort_order)
+			->whereBetween('created_at', $created_at)
+			->whereIn('transaction_status_id', $statuses)
+			->whereIn('transaction_type_id', $types)
+			->with('client')
+			->paginate($per_page);
 
 		return response()->success(compact('transactions'));
 	}

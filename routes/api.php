@@ -77,6 +77,7 @@ Route::group(['middleware' => ['role:systems-admin|fx-ops|fx-ops|fx-ops-manager|
 
 		Route::post('', 'TransactionController@requestTransaction')->name('request');
 
+		Route::get('paginate', 'TransactionController@paginate')->name('pagination');
 		Route::get('{id}', 'TransactionController@show')->name('show');
 		Route::get('', 'TransactionController@index')->name('all');
 	});
