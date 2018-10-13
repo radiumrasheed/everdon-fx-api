@@ -42,6 +42,7 @@ Route::group(['middleware' => ['role:systems-admin']], function () {
 
 	Route::resource('products', 'ProductController')->only('update');
 	Route::resource('staffs', 'StaffController');
+	Route::resource('organization', 'OrganizationController');
 
 });
 
